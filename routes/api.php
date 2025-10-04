@@ -5,7 +5,6 @@ use App\Http\Controllers\API\CommodityController;
 use App\Http\Controllers\API\CommodityLocationController;
 use App\Http\Controllers\API\GedungController;
 use App\Http\Controllers\API\JenisBarangController;
-use App\Http\Controllers\API\KategoriBarangController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\API\UserController;
 use Illuminate\Http\Request;
@@ -31,8 +30,6 @@ Route::name('api.')->group(function () {
     Route::get('/ruangan/{commodity_location}', [CommodityLocationController::class, 'show'])->name('ruangan.show');
     Route::get('/jenis-barang/{jenisBarang}', [JenisBarangController::class, 'show'])
         ->name('jenis-barang.show');
-        Route::get('kategori-barang/{kategoriBarang}', [KategoriBarangController::class, 'show'])
-        ->name('kategori-barang.show');
     Route::get('/gedung/{gedung}', [GedungController::class, 'show'])->name('gedung.show');
     Route::get(
         '/perolehan/{commodity_acquisition}',

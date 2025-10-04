@@ -3,7 +3,11 @@
 namespace App;
 
 use App\CommodityStockOpname;
+use App\CommodityLocation;
+use App\Gedung;
+use App\JenisBarang;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -26,9 +30,19 @@ class Commodity extends Model
             $model->item_number = $model->generateItemNumber();
 
             // Relasi
-            $commodityLocation = CommodityLocation::findOrFail($model->commodity_location_id);
-            $gedung = Gedung::findOrFail($model->gedung_id);
-            $jenisBarang = JenisBarang::findOrFail($model->jenis_barang_id);
+            $commodityLocation = CommodityLocation::find($model->commodity_location_id);
+            $gedung = Gedung::find($model->gedung_id);
+            $jenisBarang = JenisBarang::find($model->jenis_barang_id);
+
+            // Jika salah satu relasi tidak ditemukan, log dan hentikan pembuatan kode
+            if (! $commodityLocation || ! $gedung || ! $jenisBarang) {
+                Log::warning('Relasi tidak ditemukan saat membuat Commodity', [
+                    'commodity_location_id' => $model->commodity_location_id,
+                    'gedung_id' => $model->gedung_id,
+                    'jenis_barang_id' => $model->jenis_barang_id,
+                ]);
+                return;
+            }
 
             // Tahun dari date_of_purchase
             $tahun = $model->date_of_purchase

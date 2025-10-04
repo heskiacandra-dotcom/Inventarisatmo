@@ -7,7 +7,6 @@ use App\Http\Controllers\CommodityServiceController;
 use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\GedungController;
 use App\Http\Controllers\JenisBarangController;
-use App\Http\Controllers\KategoriBarangController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\LogoutController;
@@ -88,9 +87,6 @@ Route::get('/laporan/penyusutan/export', [LaporanPenyusutanController::class, 'e
         // Di dalam group middleware 'auth'
         Route::get('/find-by-barcode', [StockOpnameController::class, 'findByBarcode'])->name('stock-opname.find-by-barcode');
     });
-
-    Route::resource('kategori-barang', KategoriBarangController::class)->except('create', 'edit', 'show')
-        ->parameter('kategori-barang', 'kategori-barang');
 
     Route::resource('gedung', GedungController::class)->except('create', 'edit', 'show')
         ->parameter('gedung', 'gedung');
