@@ -155,7 +155,7 @@
                             <div class="form-group">
                                 <label for="date_of_purchase">Tanggal Pembelian<span
                                         class="font-weight-bold text-danger">*</span></label>
-                                <input type="date"
+                                <input type="text"
                                     class="form-control @error('date_of_purchase', 'store') is-invalid @enderror"
                                     name="date_of_purchase" id="date_of_purchase"
                                     value="{{ old('date_of_purchase') }}"

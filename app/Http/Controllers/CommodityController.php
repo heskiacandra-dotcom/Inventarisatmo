@@ -30,93 +30,93 @@ class CommodityController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-{
-    $query = Commodity::query()->with('commodity_location', 'commodity_acquisition');
+    {
+        $query = Commodity::query()->with('commodity_location', 'commodity_acquisition');
 
-    // Apply filters
-    $query->when(request()->filled('condition'), function ($q) {
-        return $q->where('condition', request('condition'));
-    });
-
-    $query->when(request()->filled('commodity_location_id'), function ($q) {
-        return $q->where('commodity_location_id', request('commodity_location_id'));
-    });
-
-    $query->when(request()->filled('commodity_acquisition_id'), function ($q) {
-        return $q->where('commodity_acquisition_id', request('commodity_acquisition_id'));
-    });
-
-    $query->when(request()->filled('date_of_purchase'), function ($q) {
-        return $q->where('date_of_purchase', request('date_of_purchase'));
-    });
-
-    $query->when(request()->filled('material'), function ($q) {
-        return $q->where('material', request('material'));
-    });
-
-    $query->when(request()->filled('brand'), function ($q) {
-        return $q->where('brand', request('brand'));
-    });
-
-    // Ambil data gedung (untuk dropdown di modal create/edit)
-    $gedung = Gedung::orderBy('name', 'ASC')->get();
-    $jenisBarang = JenisBarang::orderBy('name', 'ASC')->get();
-
-    $commodities = $query->latest()->get();
-    $date_of_purchases = Commodity::pluck('date_of_purchase')->unique()->sort();
-    $commodity_brands = Commodity::pluck('brand')->unique()->sort();
-    $commodity_materials = Commodity::pluck('material')->unique()->sort();
-    $commodity_acquisitions = CommodityAcquisition::orderBy('name', 'ASC')->get();
-    $commodity_locations = CommodityLocation::orderBy('name', 'ASC')->get();
-
-    // Clone query dan reset order by
-    $filteredQuery = clone $query;
-    $filteredQuery->reorder();
-
-    // Clone query untuk TOTAL tanpa group by
-    $totalQuery = clone $query;
-    $totalQuery->reorder();
-
-    // Clone query untuk KONDISI
-    $conditionQuery = clone $query;
-    $conditionQuery->reorder();
-
-    // Hitung total barang (TANPA group by)
-    $totalCount = $totalQuery->count();
-
-    // Hitung statistik kondisi
-    $commodity_condition_count = $conditionQuery->selectRaw('`condition`, count(*) as count')
-        ->groupBy('condition')
-        ->get()
-        ->map(function ($commodity) {
-            return collect([
-                'condition_name' => $this->commodityRepository->getConditionName($commodity->condition),
-                'count' => $commodity->count,
-            ]);
+        // Apply filters
+        $query->when(request()->filled('condition'), function ($q) {
+            return $q->where('condition', request('condition'));
         });
 
-    $commodity_counts = [
-        'commodity_in_total' => $totalCount,
-        'commodity_in_good_condition' => $commodity_condition_count->firstWhere('condition_name', 'Baik')['count'] ?? 0,
-        'commodity_in_not_good_condition' => $commodity_condition_count->firstWhere('condition_name', 'Rusak')['count'] ?? 0,
-        'commodity_in_heavily_damage_condition' => $commodity_condition_count->firstWhere('condition_name', 'Belum di SO')['count'] ?? 0,
-    ];
+        $query->when(request()->filled('commodity_location_id'), function ($q) {
+            return $q->where('commodity_location_id', request('commodity_location_id'));
+        });
 
-    return view(
-        'commodities.index',
-        compact(
-            'commodities',
-            'gedung', // <<< pastikan ini dikirim ke view
-            'jenisBarang', 
-            'commodity_acquisitions',
-            'commodity_locations',
-            'date_of_purchases',
-            'commodity_brands',
-            'commodity_materials',
-            'commodity_counts'
-        )
-    );
-}
+        $query->when(request()->filled('commodity_acquisition_id'), function ($q) {
+            return $q->where('commodity_acquisition_id', request('commodity_acquisition_id'));
+        });
+
+        $query->when(request()->filled('date_of_purchase'), function ($q) {
+            return $q->where('date_of_purchase', request('date_of_purchase'));
+        });
+
+        $query->when(request()->filled('material'), function ($q) {
+            return $q->where('material', request('material'));
+        });
+
+        $query->when(request()->filled('brand'), function ($q) {
+            return $q->where('brand', request('brand'));
+        });
+
+        // Ambil data gedung (untuk dropdown di modal create/edit)
+        $gedung = Gedung::orderBy('name', 'ASC')->get();
+        $jenisBarang = JenisBarang::orderBy('name', 'ASC')->get();
+
+        $commodities = $query->latest()->get();
+        $date_of_purchases = Commodity::pluck('date_of_purchase')->unique()->sort();
+        $commodity_brands = Commodity::pluck('brand')->unique()->sort();
+        $commodity_materials = Commodity::pluck('material')->unique()->sort();
+        $commodity_acquisitions = CommodityAcquisition::orderBy('name', 'ASC')->get();
+        $commodity_locations = CommodityLocation::orderBy('name', 'ASC')->get();
+
+        // Clone query dan reset order by
+        $filteredQuery = clone $query;
+        $filteredQuery->reorder();
+
+        // Clone query untuk TOTAL tanpa group by
+        $totalQuery = clone $query;
+        $totalQuery->reorder();
+
+        // Clone query untuk KONDISI
+        $conditionQuery = clone $query;
+        $conditionQuery->reorder();
+
+        // Hitung total barang (TANPA group by)
+        $totalCount = $totalQuery->count();
+
+        // Hitung statistik kondisi
+        $commodity_condition_count = $conditionQuery->selectRaw('`condition`, count(*) as count')
+            ->groupBy('condition')
+            ->get()
+            ->map(function ($commodity) {
+                return collect([
+                    'condition_name' => $this->commodityRepository->getConditionName($commodity->condition),
+                    'count' => $commodity->count,
+                ]);
+            });
+
+        $commodity_counts = [
+            'commodity_in_total' => $totalCount,
+            'commodity_in_good_condition' => $commodity_condition_count->firstWhere('condition_name', 'Baik')['count'] ?? 0,
+            'commodity_in_not_good_condition' => $commodity_condition_count->firstWhere('condition_name', 'Rusak')['count'] ?? 0,
+            'commodity_in_heavily_damage_condition' => $commodity_condition_count->firstWhere('condition_name', 'Belum di SO')['count'] ?? 0,
+        ];
+
+        return view(
+            'commodities.index',
+            compact(
+                'commodities',
+                'gedung', // <<< pastikan ini dikirim ke view
+                'jenisBarang',
+                'commodity_acquisitions',
+                'commodity_locations',
+                'date_of_purchases',
+                'commodity_brands',
+                'commodity_materials',
+                'commodity_counts'
+            )
+        );
+    }
 
 
     /**
@@ -127,16 +127,18 @@ class CommodityController extends Controller
         $validated = $request->validated();
         $quantity = $validated['quantity'] ?? 1;
 
-        // hapus field quantity dari data per record
-        unset($validated['quantity']);
+        // Simpan kuantitas asli
+        $originalQuantity = $quantity;
 
-        // buat data sebanyak quantity
         for ($i = 0; $i < $quantity; $i++) {
-            Commodity::create($validated);
+            Commodity::create(array_merge($validated, [
+                'quantity' => $originalQuantity // setiap record tetap pakai kuantitas asli
+            ]));
         }
 
         return to_route('barang.index')->with('success', 'Data berhasil ditambahkan!');
     }
+
 
     /**
      * Update the specified resource in storage.
@@ -316,68 +318,68 @@ class CommodityController extends Controller
     }
 
     public function apiShow($id)
-{
-    $commodity = Commodity::with(['commodity_location', 'commodity_acquisition', 'jenisBarang', 'gedung'])
-        ->findOrFail($id);
+    {
+        $commodity = Commodity::with(['commodity_location', 'commodity_acquisition', 'jenisBarang', 'gedung'])
+            ->findOrFail($id);
 
-    // Mapping kondisi
-    $conditionMap = [
-        1 => 'Baik',
-        2 => 'Kurang Baik',
-        3 => 'Rusak Berat',
-    ];
-    $conditionText = $conditionMap[$commodity->condition] ?? 'Belum di SO';
+        // Mapping kondisi
+        $conditionMap = [
+            1 => 'Baik',
+            2 => 'Kurang Baik',
+            3 => 'Rusak Berat',
+        ];
+        $conditionText = $conditionMap[$commodity->condition] ?? 'Belum di SO';
 
-    return response()->json([
-        'data' => [
-            'item_code' => $commodity->item_code,
-            'item_number' => $commodity->item_number, // nomor barang
-            'name' => $commodity->name,
+        return response()->json([
+            'data' => [
+                'item_code' => $commodity->item_code,
+                'item_number' => $commodity->item_number, // nomor barang
+                'name' => $commodity->name,
 
-            // Lokasi barang
-            'commodity_location' => [
-                'id' => $commodity->commodity_location->id,
-                'name' => $commodity->commodity_location->name
-            ],
+                // Lokasi barang
+                'commodity_location' => [
+                    'id' => $commodity->commodity_location->id,
+                    'name' => $commodity->commodity_location->name
+                ],
 
-            // Asal perolehan
-            'commodity_acquisition' => [
-                'id' => $commodity->commodity_acquisition->id,
-                'name' => $commodity->commodity_acquisition->name
-            ],
+                // Asal perolehan
+                'commodity_acquisition' => [
+                    'id' => $commodity->commodity_acquisition->id,
+                    'name' => $commodity->commodity_acquisition->name
+                ],
 
-            // Jenis barang
-            'jenis_barang' => [
-                'id' => $commodity->jenisBarang->id,
-                'name' => $commodity->jenisBarang->name
-            ],
+                // Jenis barang
+                'jenis_barang' => [
+                    'id' => $commodity->jenisBarang->id,
+                    'name' => $commodity->jenisBarang->name
+                ],
 
-            // Gedung
-            'gedung' => [
-                'id' => $commodity->gedung->id,
-                'name' => $commodity->gedung->name
-            ],
+                // Gedung
+                'gedung' => [
+                    'id' => $commodity->gedung->id,
+                    'name' => $commodity->gedung->name
+                ],
 
-            'material' => $commodity->material,
-            'brand' => $commodity->brand,
-            'date_of_purchase' => $commodity->date_of_purchase,
+                'material' => $commodity->material,
+                'brand' => $commodity->brand,
+                'date_of_purchase' => $commodity->date_of_purchase,
 
-            'condition' => $commodity->condition,
-            'condition_name' => $conditionText, // pakai mapping
+                'condition' => $commodity->condition,
+                'condition_name' => $conditionText, // pakai mapping
 
-            'note' => $commodity->note,
-            'quantity' => $commodity->quantity,
+                'note' => $commodity->note,
+                'quantity' => $commodity->quantity,
 
-            // Harga asli
-            'price' => $commodity->price,
-            'price_per_item' => $commodity->price_per_item,
+                // Harga asli
+                'price' => $commodity->price,
+                'price_per_item' => $commodity->price_per_item,
 
-            // Harga format Rp
-            'price_formatted' => number_format($commodity->price, 0, ',', '.'),
-            'price_per_item_formatted' => number_format($commodity->price_per_item, 0, ',', '.'),
-        ]
-    ]);
-}
+                // Harga format Rp
+                'price_formatted' => number_format($commodity->price, 0, ',', '.'),
+                'price_per_item_formatted' => number_format($commodity->price_per_item, 0, ',', '.'),
+            ]
+        ]);
+    }
 
 
     public function publicScanPage()

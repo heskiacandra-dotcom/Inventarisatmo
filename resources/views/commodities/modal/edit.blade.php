@@ -40,7 +40,7 @@
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="form-group">
-                                <label for="gedung_id">Gedung<span class="font-weight-bold text-danger">*</span></label>
+                                <label for="gedung_id">Peruntukan Barang<span class="font-weight-bold text-danger">*</span></label>
                                 <select class="form-control" name="gedung_id" id="gedung_id" required>
                                     <option value="">Pilih Gedung</option>
                                     @foreach ($gedung as $g)
@@ -65,7 +65,7 @@
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="form-group">
-                                <label for="jenis_barang_id">Jenis Barang<span class="font-weight-bold text-danger">*</span></label>
+                                <label for="jenis_barang_id">Jenis Aset Tetap<span class="font-weight-bold text-danger">*</span></label>
                                 <select class="form-control" name="jenis_barang_id" id="jenis_barang_id" required>
                                     <option value="">Pilih Jenis Barang</option>
                                     @foreach ($jenisBarang as $jb)
@@ -99,7 +99,7 @@
                         <div class="col-lg-4 col-12">
                             <div class="form-group">
                                 <label for="date_of_purchase">Tanggal Pembelian<span class="font-weight-bold text-danger">*</span></label>
-                                <input type="date" class="form-control" name="date_of_purchase" id="date_of_purchase">
+                                <input type="text" class="form-control" name="date_of_purchase" id="date_of_purchase">
                             </div>
                         </div>
                         <div class="col-lg-4 col-12">

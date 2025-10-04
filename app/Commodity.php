@@ -44,10 +44,19 @@ class Commodity extends Model
                 return;
             }
 
-            // Tahun dari date_of_purchase
-            $tahun = $model->date_of_purchase
-                ? Carbon::parse($model->date_of_purchase)->format('Y')
-                : now()->format('Y');
+            // Ekstrak tahun dari date_of_purchase (fleksibel)
+            $tahun = null;
+
+            if (!empty($model->date_of_purchase)) {
+                if (preg_match('/\b(19|20)\d{2}\b/', $model->date_of_purchase, $matches)) {
+                    $tahun = $matches[0];
+                }
+            }
+
+            if (!$tahun) {
+                $tahun = now()->format('Y'); // fallback
+            }
+
 
             // Format urut 3 digit
             $formattedItemNumber = str_pad($model->item_number, 3, '0', STR_PAD_LEFT);
