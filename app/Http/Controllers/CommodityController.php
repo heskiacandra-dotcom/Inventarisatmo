@@ -15,8 +15,6 @@ use App\Imports\CommoditiesImport;
 use App\Repositories\CommodityRepository;
 use App\Gedung; // <-- Tambahkan import model Gedung
 use App\JenisBarang; // tambahkan di atas
-use Illuminate\Support\Facades\Log;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -166,26 +164,6 @@ class CommodityController extends Controller
      * Generate PDF for all commodities.
      */
 
-public function downloadPdf()
-{
-    Log::info('➡️ [1] Masuk ke downloadPdf()');
-
-    try {
-        $commodities = Commodity::all();
-        Log::info('➡️ [2] Data berhasil diambil: ' . $commodities->count());
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('commodities.pdf-print', compact('commodities'));
-        Log::info('➡️ [3] View berhasil diload');
-
-        $pdf->setPaper('A4', 'landscape');
-        Log::info('➡️ [4] Paper diset, siap download');
-
-        return $pdf->download('data-barang.pdf');
-    } catch (\Exception $e) {
-        Log::error('❌ ERROR: ' . $e->getMessage());
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-}
 
     public function generatePDF()
     {

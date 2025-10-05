@@ -40,11 +40,6 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->
 Route::post('/login', [LoginController::class, 'login'])->middleware('guest');
 Route::post('/logout', LogoutController::class)->name('logout')->middleware('auth');
 
-// tes route tanpa auth
-Route::get('/barang/test-download', [App\Http\Controllers\CommodityController::class, 'downloadPdf']);
-Route::get('/barang/download-pdf', [App\Http\Controllers\CommodityController::class, 'downloadPdf'])
-    ->name('barang.download-pdf');
-
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [HomeController::class, 'index'])->name('home');
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');

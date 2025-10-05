@@ -31,7 +31,7 @@ class StoreCommodityRequest extends FormRequest
             'name'                    => 'required|string|min:3|max:255',
             'brand'                   => 'nullable|string|min:3|max:255',
             'material'                => 'nullable|string|min:3|max:255',
-            'date_of_purchase'        => 'required|date',
+            'date_of_purchase'        => 'required|string|min:3|max:50',
             'condition'               => 'required|in:1,2,3',
             'quantity'                => 'required|numeric|digits_between:1,10',
             'price'                   => 'required|numeric|digits_between:1,10',
@@ -70,7 +70,6 @@ class StoreCommodityRequest extends FormRequest
             'name.max'      => 'Kolom nama barang maksimal :max karakter!',
 
             'date_of_purchase.required' => 'Kolom tahun pembelian wajib diisi!',
-            'date_of_purchase.date'     => 'Format tanggal pembelian tidak valid!',
 
             'condition.required' => 'Kolom kondisi wajib diisi!',
             'condition.in'       => 'Kolom kondisi yang dipilih tidak valid!',

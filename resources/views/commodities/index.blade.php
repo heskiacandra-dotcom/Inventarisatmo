@@ -106,9 +106,13 @@
 					@php
 					    $query = request()->query();
 					@endphp
-					<a href="{{ route('barang.download-pdf') }}" class="btn btn-success">
-					📄 Download PDF (Backend)
-					</a>
+					<form action="{{ route('barang.print', $query) }}" method="POST">
+						@csrf
+						<button type="submit" class="btn btn-success">
+							<i class="fas fa-fw fa-print"></i>
+							Print
+						</button>
+					</form>
 					@endcan
 				</div>
 			</div>

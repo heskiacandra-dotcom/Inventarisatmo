@@ -13,7 +13,7 @@ class StockOpnameController extends Controller
 
     public function index()
     {
-        $query = Commodity::query()->with('commodity_location', 'commodity_acquisition', 'kategoriBarang');
+        $query = Commodity::query()->with('commodity_location', 'commodity_acquisition');
 
         // Filter sama seperti commodity index
         $query->when(request()->filled('condition'), function ($q) {
