@@ -101,7 +101,7 @@
         }
 
         .kode-barang {
-            font-size: 7pt;
+            font-size: 5pt;
             font-weight: 600;
             background-color: black;
             color: white;

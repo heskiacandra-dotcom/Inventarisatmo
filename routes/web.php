@@ -40,6 +40,11 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->
 Route::post('/login', [LoginController::class, 'login'])->middleware('guest');
 Route::post('/logout', LogoutController::class)->name('logout')->middleware('auth');
 
+// tes route tanpa auth
+Route::get('/barang/test-download', [App\Http\Controllers\CommodityController::class, 'downloadPdf']);
+Route::get('/barang/download-pdf', [App\Http\Controllers\CommodityController::class, 'downloadPdf'])
+    ->name('barang.download-pdf');
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [HomeController::class, 'index'])->name('home');
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
@@ -53,6 +58,8 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('barang', CommodityController::class)->except('create', 'edit', 'show')->parameter('barang', 'commodity');
     Route::prefix('barang')->name('barang.')->group(function () {
+       //Route::get('/download-pdf', [CommodityController::class, 'downloadPdf'])->name('download-pdf');
+        Route::post('/barang/print', [CommodityController::class, 'print'])->name('barang.print');
         Route::post('/print', [CommodityController::class, 'generatePDF'])->name('print');
         Route::get('/qrcode/{id}', [CommodityController::class, 'generateQRCode'])->name('print-qrcode');
         Route::post('/export', [CommodityController::class, 'export'])->name('export');

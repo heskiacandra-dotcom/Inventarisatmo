@@ -106,13 +106,9 @@
 					@php
 					    $query = request()->query();
 					@endphp
-					<form action="{{ route('barang.print', $query) }}" method="POST">
-						@csrf
-						<button type="submit" class="btn btn-success">
-							<i class="fas fa-fw fa-print"></i>
-							Print
-						</button>
-					</form>
+					<a href="{{ route('barang.download-pdf') }}" class="btn btn-success">
+					📄 Download PDF (Backend)
+					</a>
 					@endcan
 				</div>
 			</div>
@@ -266,5 +262,45 @@
 
 	@push('js')
 	@include('commodities._script')
+
+	<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const printBtn = document.getElementById('print-all-btn');
+    if (!printBtn) return;
+
+    printBtn.addEventListener('click', async () => {
+        printBtn.disabled = true;
+        printBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat PDF...';
+
+        try {
+            const response = await fetch("{{ route('barang.print', $query) }}", {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                }
+            });
+
+            if (!response.ok) throw new Error("Gagal membuat PDF");
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Stiker-Barang.pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            alert("Terjadi kesalahan saat membuat PDF!");
+            console.error(e);
+        } finally {
+            printBtn.disabled = false;
+            printBtn.innerHTML = '<i class="fas fa-fw fa-print"></i> Print';
+        }
+    });
+});
+</script>
 	@endpush
 </x-layout>
