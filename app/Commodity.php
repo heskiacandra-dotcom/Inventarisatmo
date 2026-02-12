@@ -171,4 +171,9 @@ class Commodity extends Model
 
         return ($harga - $residu) / $umur;
     }
+
+    public function itemLendings()
+    {
+        return $this->hasMany(ItemLending::class);
+    }
 }

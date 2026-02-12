@@ -19,4 +19,16 @@ class CommodityLocation extends Model
     {
         return $this->hasMany(Commodity::class);
     }
+
+    // Tambahkan ini
+    public function itemLendings()
+    {
+        return $this->hasMany(ItemLending::class, 'origin_location_id');
+    }
+    
+    // Tambahkan ini
+    public function roomBookings()
+    {
+        return $this->hasMany(RoomBooking::class, 'commodity_location_id');
+    }
 }

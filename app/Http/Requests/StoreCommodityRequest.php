@@ -28,15 +28,15 @@ class StoreCommodityRequest extends FormRequest
             'commodity_location_id'   => 'required|numeric|exists:commodity_locations,id',
             'jenis_barang_id'         => 'required|numeric|exists:jenis_barang,id', // ✅ baru
             'gedung_id'               => 'required|numeric|exists:gedung,id',       // ✅ baru
-            'name'                    => 'required|string|min:3|max:255',
-            'brand'                   => 'nullable|string|min:3|max:255',
-            'material'                => 'nullable|string|min:3|max:255',
-            'date_of_purchase'        => 'required|string|min:3|max:50',
+            'name'                    => 'required|string|max:255',
+            'brand'                   => 'nullable|string|max:255',
+            'material'                => 'nullable|string|max:255',
+            'date_of_purchase'        => 'required|string|max:50',
             'condition'               => 'required|in:1,2,3',
             'quantity'                => 'required|numeric|digits_between:1,10',
             'price'                   => 'required|numeric|digits_between:1,10',
             'price_per_item'          => 'required|numeric|digits_between:1,10',
-            'note'                    => 'nullable|string|min:3|max:1000',
+            'note'                    => 'nullable|string|max:1000',
         ];
     }
 
@@ -66,7 +66,6 @@ class StoreCommodityRequest extends FormRequest
 
             'name.required' => 'Kolom nama barang wajib diisi!',
             'name.string'   => 'Kolom nama barang harus berupa karakter!',
-            'name.min'      => 'Kolom nama barang minimal :min karakter!',
             'name.max'      => 'Kolom nama barang maksimal :max karakter!',
 
             'date_of_purchase.required' => 'Kolom tahun pembelian wajib diisi!',
@@ -87,7 +86,6 @@ class StoreCommodityRequest extends FormRequest
             'price_per_item.digits_between'  => 'Kolom harga satuan harus memiliki antara :min dan :max digit!',
 
             'note.string' => 'Kolom catatan harus berupa teks!',
-            'note.min'    => 'Kolom catatan minimal :min karakter!',
             'note.max'    => 'Kolom catatan maksimal :max karakter!',
         ];
     }

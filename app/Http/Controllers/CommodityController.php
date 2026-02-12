@@ -20,10 +20,11 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class CommodityController extends Controller
 {
-    public function __construct(
-        private CommodityRepository $commodityRepository,
-    ) {
-        $this->authorizeResource(Commodity::class, 'commodity');
+    public function __construct(private
+        CommodityRepository $commodityRepository,
+        )
+    {
+        $this->authorizeResource(Commodity::class , 'commodity');
     }
 
     /**
@@ -89,32 +90,32 @@ class CommodityController extends Controller
             ->groupBy('condition')
             ->get()
             ->map(function ($commodity) {
-                return collect([
-                    'condition_name' => $this->commodityRepository->getConditionName($commodity->condition),
-                    'count' => $commodity->count,
-                ]);
-            });
+            return collect([
+            'condition_name' => $this->commodityRepository->getConditionName($commodity->condition),
+            'count' => $commodity->count,
+            ]);
+        });
 
         $commodity_counts = [
             'commodity_in_total' => $totalCount,
-            'commodity_in_good_condition' => $commodity_condition_count->firstWhere('condition_name', 'Baik')['count'] ?? 0,
-            'commodity_in_not_good_condition' => $commodity_condition_count->firstWhere('condition_name', 'Rusak')['count'] ?? 0,
-            'commodity_in_heavily_damage_condition' => $commodity_condition_count->firstWhere('condition_name', 'Belum di SO')['count'] ?? 0,
+            'commodity_in_good_condition' => data_get($commodity_condition_count->firstWhere('condition_name', 'Baik'), 'count', 0),
+            'commodity_in_not_good_condition' => data_get($commodity_condition_count->firstWhere('condition_name', 'Rusak'), 'count', 0),
+            'commodity_in_heavily_damage_condition' => data_get($commodity_condition_count->firstWhere('condition_name', 'Belum di SO'), 'count', 0),
         ];
 
         return view(
             'commodities.index',
             compact(
-                'commodities',
-                'gedung', // <<< pastikan ini dikirim ke view
-                'jenisBarang',
-                'commodity_acquisitions',
-                'commodity_locations',
-                'date_of_purchases',
-                'commodity_brands',
-                'commodity_materials',
-                'commodity_counts'
-            )
+            'commodities',
+            'gedung', // <<< pastikan ini dikirim ke view
+            'jenisBarang',
+            'commodity_acquisitions',
+            'commodity_locations',
+            'date_of_purchases',
+            'commodity_brands',
+            'commodity_materials',
+            'commodity_counts'
+        )
         );
     }
 
@@ -174,38 +175,38 @@ class CommodityController extends Controller
         // Terapkan filter yang sama seperti di index()
         $query->when(
             request()->filled('condition'),
-            fn($q) =>
-            $q->where('condition', request('condition'))
+        fn($q) =>
+        $q->where('condition', request('condition'))
         );
 
         $query->when(
             request()->filled('commodity_location_id'),
-            fn($q) =>
-            $q->where('commodity_location_id', request('commodity_location_id'))
+        fn($q) =>
+        $q->where('commodity_location_id', request('commodity_location_id'))
         );
 
         $query->when(
             request()->filled('commodity_acquisition_id'),
-            fn($q) =>
-            $q->where('commodity_acquisition_id', request('commodity_acquisition_id'))
+        fn($q) =>
+        $q->where('commodity_acquisition_id', request('commodity_acquisition_id'))
         );
 
         $query->when(
             request()->filled('date_of_purchase'),
-            fn($q) =>
-            $q->where('date_of_purchase', request('date_of_purchase'))
+        fn($q) =>
+        $q->where('date_of_purchase', request('date_of_purchase'))
         );
 
         $query->when(
             request()->filled('material'),
-            fn($q) =>
-            $q->where('material', request('material'))
+        fn($q) =>
+        $q->where('material', request('material'))
         );
 
         $query->when(
             request()->filled('brand'),
-            fn($q) =>
-            $q->where('brand', request('brand'))
+        fn($q) =>
+        $q->where('brand', request('brand'))
         );
 
         $commodities = $query->get();
@@ -233,11 +234,11 @@ class CommodityController extends Controller
         $filename = 'daftar-barang-' . date('d-m-Y');
 
         return match ($request->extension) {
-            'xlsx' => Excel::download(new CommoditiesExport, $filename . '.xlsx', \Maatwebsite\Excel\Excel::XLSX),
-            'xls' => Excel::download(new CommoditiesExport, $filename . '.xls', \Maatwebsite\Excel\Excel::XLS),
-            'csv' => Excel::download(new CommoditiesExport, $filename . '.csv', \Maatwebsite\Excel\Excel::CSV),
-            'html' => Excel::download(new CommoditiesExport, $filename . '.html', \Maatwebsite\Excel\Excel::HTML),
-        };
+                'xlsx' => Excel::download(new CommoditiesExport, $filename . '.xlsx', \Maatwebsite\Excel\Excel::XLSX),
+                'xls' => Excel::download(new CommoditiesExport, $filename . '.xls', \Maatwebsite\Excel\Excel::XLS),
+                'csv' => Excel::download(new CommoditiesExport, $filename . '.csv', \Maatwebsite\Excel\Excel::CSV),
+                'html' => Excel::download(new CommoditiesExport, $filename . '.html', \Maatwebsite\Excel\Excel::HTML),
+            };
     }
 
     /**
@@ -262,7 +263,7 @@ class CommodityController extends Controller
     {
         $commodity = Commodity::with(['commodity_location', 'commodity_acquisition'])
             ->where('item_code', $kode) // cari berdasarkan kode barang
-            ->orWhere('id', $kode)      // atau berdasarkan id
+            ->orWhere('id', $kode) // atau berdasarkan id
             ->first();
 
         if (!$commodity) {
@@ -284,17 +285,17 @@ class CommodityController extends Controller
             ->groupBy('condition')
             ->get()
             ->map(function ($row) use ($conditionMap) {
-                return collect([
-                    'condition_name' => $conditionMap[$row->condition] ?? 'Belum di SO',
-                    'count' => $row->count,
-                ]);
-            });
+            return collect([
+            'condition_name' => $conditionMap[$row->condition] ?? 'Belum di SO',
+            'count' => $row->count,
+            ]);
+        });
 
         $commodity_counts = [
             'commodity_in_total' => $totalCount,
-            'commodity_in_good_condition' => $commodity_condition_count->firstWhere('condition_name', 'Baik')['count'] ?? 0,
-            'commodity_in_not_good_condition' => $commodity_condition_count->firstWhere('condition_name', 'Rusak')['count'] ?? 0,
-            'commodity_in_heavily_damage_condition' => $commodity_condition_count->firstWhere('condition_name', 'Belum di SO')['count'] ?? 0,
+            'commodity_in_good_condition' => data_get($commodity_condition_count->firstWhere('condition_name', 'Baik'), 'count', 0),
+            'commodity_in_not_good_condition' => data_get($commodity_condition_count->firstWhere('condition_name', 'Rusak'), 'count', 0),
+            'commodity_in_heavily_damage_condition' => data_get($commodity_condition_count->firstWhere('condition_name', 'Belum di SO'), 'count', 0),
         ];
 
         return response()->json([
@@ -386,6 +387,42 @@ class CommodityController extends Controller
 
     public function publicScanPage()
     {
-        return view('commodities.public-scan');
+        $locations = CommodityLocation::orderBy('name')->get();
+        return view('commodities.public-scan', compact('locations'));
+    }
+
+    public function reportLocation(Request $request)
+    {
+        $request->validate([
+            'commodity_id' => 'required|exists:commodities,id',
+            'new_location_id' => 'required|exists:commodity_locations,id',
+            'reporter_name' => 'required|string|max:255',
+        ]);
+
+        $commodity = Commodity::findOrFail($request->commodity_id);
+        $oldLocationId = $commodity->commodity_location_id;
+
+        // 1. Buat catatan mutasi di tabel ItemLending (sebagai histori)
+        \App\ItemLending::create([
+            'commodity_id' => $commodity->id,
+            'user_name' => $request->reporter_name . ' (Lapor Scan)',
+            'origin_location_id' => $oldLocationId,
+            'return_location_id' => $request->new_location_id,
+            'start_date' => now(),
+            'start_time' => now()->format('H:i'),
+            'end_date' => now(), // langsung selesai
+            'end_time' => now()->format('H:i'), // langsung selesai
+            'actual_return_date' => now(),
+            'actual_return_time' => now()->format('H:i'),
+            'status' => 'returned', // Anggap sudah kembali/pindah
+            'notes' => 'Pemindahan lokasi otomatis via fitur Lapor Scan QR Code.'
+        ]);
+
+        // 2. Update lokasi barang sekarang
+        $commodity->update([
+            'commodity_location_id' => $request->new_location_id
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Lokasi barang berhasil diperbarui otomatis!']);
     }
 }

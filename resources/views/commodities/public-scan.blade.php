@@ -156,7 +156,7 @@
                     <table class="table table-bordered table-sm mb-0">
                         <tr><th class="bg-light w-25">Kode</th><td class="font-monospace fw-bold text-primary">${d.item_code}</td></tr>
                         <tr><th class="bg-light">Barang</th><td class="fw-bold">${d.name}</td></tr>
-                        <tr><th class="bg-light">Lokasi</th><td><span class="badge bg-info text-dark"><i class="fas fa-map-pin me-1"></i>${d.location}</span></td></tr>
+                        <tr><th class="bg-light">Lokasi</th><td><span class="badge bg-info text-dark"><i class="fas fa-map-pin me-1"></i>${d.commodity_location?.name || '-'}</span></td></tr>
                         <tr><th class="bg-light">Merk</th><td>${d.brand || '-'}</td></tr>
                         <tr><th class="bg-light">Kondisi</th><td>${d.condition_name}</td></tr>
                     </table>

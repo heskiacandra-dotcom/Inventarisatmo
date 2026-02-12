@@ -103,6 +103,17 @@
                                     </a>
                                 </li>
                             @endcan
+                            <li class="menu-header">Peminjaman</li>
+                            <li class="nav-item {{ request()->routeIs('item-lendings.*') ? 'active' : '' }}">
+                                <a href="{{ route('item-lendings.index') }}" class="nav-link">
+                                    <i class="fas fa-hand-holding"></i> <span>Peminjaman Barang</span>
+                                </a>
+                            </li>
+                            <li class="nav-item {{ request()->routeIs('room-bookings.*') ? 'active' : '' }}">
+                                <a href="{{ route('room-bookings.index') }}" class="nav-link">
+                                    <i class="fas fa-calendar-check"></i> <span>Jadwal Ruangan</span>
+                                </a>
+                            </li>
                             <li class="menu-header">Stock Opname</li>
                             @can('lihat stock opname')
                                 <li
