@@ -50,10 +50,15 @@
                     </div>
                 </div>
 
-                <div class="col-md-12 mt-2">
-                    <button type="button" class="btn btn-success float-right" id="startScanButton">
-                        <i class="fas fa-barcode"></i> Scan Barcode
-                    </button>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group mb-2">
+                            <label>Cari Nama Barang / Kode / Merk:</label>
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control" placeholder="Ketik nama atau kode barang..." value="{{ request('search') }}">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <x-slot name="resetFilterURL">{{ route('stock-opname.index') }}</x-slot>
@@ -61,75 +66,110 @@
 
             <form action="{{ route('stock-opname.store') }}" method="POST">
                 @csrf
-                <div class="d-flex justify-content-end mb-3">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Simpan Stock Opname
-                    </button>
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center mb-2 mb-md-0">
+                        <label class="mr-2 mb-0 small text-muted font-weight-bold">Tampilkan:</label>
+                        <select class="form-control form-control-sm w-auto d-inline-block shadow-sm" onchange="window.location.href = updateQueryParam('per_page', this.value)">
+                            <option value="10" @selected(request('per_page') == 10)>10</option>
+                            <option value="25" @selected(!request('per_page') || request('per_page') == 25)>25</option>
+                            <option value="50" @selected(request('per_page') == 50)>50</option>
+                            <option value="100" @selected(request('per_page') == 100)>100</option>
+                            <option value="250" @selected(request('per_page') == 250)>250</option>
+                        </select>
+                        <span class="ml-2 small text-muted">data per halaman</span>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-success mr-2" id="startScanButton">
+                            <i class="fas fa-barcode"></i> Scan Barcode
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Simpan Stock Opname
+                        </button>
+                    </div>
                 </div>
 
-                <x-datatable>
-                    <thead>
-                        <tr>
-                            <th>
-                                <input type="checkbox" id="selectAll">
-                            </th>
-                            <th>Kode Barang</th>
-                            <th>Nama Barang</th>
-                            <th>Lokasi</th>
-                            <th>Stok Sistem</th>
-                            <th>Stok Fisik</th>
-                            <th>Kondisi</th>
-                            <th>Terakhir Stock Opname</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($commodities as $commodity)
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover my-2" style="width: 100%">
+                        <thead class="thead-light">
                             <tr>
-                                <td>
-                                    <input type="checkbox" class="row-selector"
-                                        name="commodities[{{ $loop->index }}][selected]" value="1">
-                                </td>
-                                <td>{{ $commodity->item_code }}</td>
-                                <td>{{ $commodity->name }}</td>
-                                <td>{{ $commodity->commodity_location->name }}</td>
-                                <td>{{ $commodity->quantity }}</td>
-                                <td>
-                                    <input type="number" name="commodities[{{ $loop->index }}][physical_quantity]"
-                                        value="{{ $commodity->quantity }}" class="form-control physical-quantity"
-                                        min="0" required>
-                                </td>
-                                <td>
-                                    <select name="commodities[{{ $loop->index }}][condition]"
-                                        class="form-control condition-select" required>
-                                        <option value="1" {{ $commodity->condition == 1 ? 'selected' : '' }}>Baik
-                                        </option>
-                                        <option value="2" {{ $commodity->condition == 2 ? 'selected' : '' }}>Rusak
-                                        </option>
-                                        <option value="3" {{ $commodity->condition == 3 ? 'selected' : '' }}>Belum
-                                            di SO</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    @if ($commodity->stockOpnames->isNotEmpty())
-                                        {{ $commodity->stockOpnames->last()->stock_opname_at->translatedFormat('d F Y H:i') }}
-                                    @else
-                                        <span class="text-muted">Belum Pernah</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <input type="hidden" name="commodities[{{ $loop->index }}][id]"
-                                        value="{{ $commodity->id }}">
-                                    <button type="button" class="btn btn-sm btn-info show-history"
-                                        data-commodity-id="{{ $commodity->id }}"
-                                        data-commodity-name="{{ $commodity->name }}">
-                                        <i class="fas fa-history"></i>
-                                    </button>
-                                </td>
+                                <th style="width: 40px;" class="text-center">
+                                    <input type="checkbox" id="selectAll">
+                                </th>
+                                <th style="width: 140px;">Kode Barang</th>
+                                <th>Nama Barang</th>
+                                <th>Lokasi</th>
+                                <th style="width: 90px;" class="text-center">Stok Sistem</th>
+                                <th style="width: 120px;" class="text-center">Stok Fisik</th>
+                                <th style="width: 140px;">Kondisi</th>
+                                <th style="width: 170px;">Terakhir SO</th>
+                                <th style="width: 70px;" class="text-center">Histori</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </x-datatable>
+                        </thead>
+                        <tbody>
+                            @forelse ($commodities as $commodity)
+                                <tr>
+                                    <td class="text-center align-middle">
+                                        <input type="checkbox" class="row-selector"
+                                            name="commodities[{{ $commodity->id }}][selected]" value="1">
+                                    </td>
+                                    <td class="align-middle font-weight-bold">
+                                        <span class="badge badge-primary">{{ $commodity->item_code }}</span>
+                                    </td>
+                                    <td class="align-middle">{{ $commodity->name }}</td>
+                                    <td class="align-middle">{{ $commodity->commodity_location?->name ?? '-' }}</td>
+                                    <td class="align-middle text-center font-weight-bold">{{ $commodity->quantity }}</td>
+                                    <td class="align-middle">
+                                        <input type="number" name="commodities[{{ $commodity->id }}][physical_quantity]"
+                                            value="{{ $commodity->quantity }}" class="form-control form-control-sm physical-quantity text-center font-weight-bold"
+                                            min="0" required>
+                                    </td>
+                                    <td class="align-middle">
+                                        <select name="commodities[{{ $commodity->id }}][condition]"
+                                            class="form-control form-control-sm condition-select" required>
+                                            <option value="1" {{ $commodity->condition == 1 ? 'selected' : '' }}>Baik</option>
+                                            <option value="2" {{ $commodity->condition == 2 ? 'selected' : '' }}>Rusak</option>
+                                            <option value="3" {{ $commodity->condition == 3 ? 'selected' : '' }}>Belum di SO</option>
+                                        </select>
+                                    </td>
+                                    <td class="align-middle small">
+                                        @if ($commodity->latestStockOpname)
+                                            <span class="text-dark"><i class="far fa-calendar-check text-success mr-1"></i> {{ $commodity->latestStockOpname->stock_opname_at->translatedFormat('d M Y H:i') }}</span>
+                                        @else
+                                            <span class="text-muted"><i class="fas fa-clock mr-1"></i> Belum Pernah</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        <input type="hidden" name="commodities[{{ $commodity->id }}][id]"
+                                            value="{{ $commodity->id }}">
+                                        <button type="button" class="btn btn-sm btn-info show-history"
+                                            data-commodity-id="{{ $commodity->id }}"
+                                            data-commodity-name="{{ $commodity->name }}"
+                                            title="Lihat Histori">
+                                            <i class="fas fa-history"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="text-center py-4 text-muted">
+                                        <i class="fas fa-clipboard-check fa-3x mb-2 d-block"></i>
+                                        Tidak ada data barang yang sesuai dengan filter / pencarian.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top">
+                    <div class="text-muted small mb-2 mb-md-0">
+                        Menampilkan <strong>{{ $commodities->firstItem() ?? 0 }}</strong> sampai <strong>{{ $commodities->lastItem() ?? 0 }}</strong> dari <strong>{{ number_format($commodities->total(), 0, ',', '.') }}</strong> data barang
+                    </div>
+                    <div>
+                        {{ $commodities->withQueryString()->links() }}
+                    </div>
+                </div>
             </form>
         </div>
     </div>
@@ -143,9 +183,17 @@
     @push('js')
         <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
         <script>
+            function updateQueryParam(key, value) {
+                let url = new URL(window.location.href);
+                url.searchParams.set(key, value);
+                url.searchParams.set('page', '1');
+                return url.toString();
+            }
+
             $(document).ready(function() {
                 let html5QrCode = null;
                 let currentCommodityId = null;
+
 
                 // Handle select all checkbox
                 $('#selectAll').click(function() {

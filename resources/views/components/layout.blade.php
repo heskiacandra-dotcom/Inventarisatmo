@@ -6,6 +6,11 @@
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" name="viewport" />
     <title>{{ $title }} &mdash; {{ config('app.name') }}</title>
 
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
     <!-- General CSS Files -->
     <link rel="stylesheet" href="{{ url('assets/bootstrap/css/bootstrap.min.css') }}" />
     <link rel="stylesheet" href="{{ url('assets/fontawesome/css/all.css') }}" />
@@ -16,6 +21,7 @@
     <!-- Template CSS -->
     <link rel="stylesheet" href="{{ url('assets/css/style.css') }}" />
     <link rel="stylesheet" href="{{ url('assets/css/components.css') }}" />
+    <link rel="stylesheet" href="{{ url('assets/css/custom.css') }}?v={{ time() }}" />
 
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.min.css" rel="stylesheet" />
     <link rel="stylesheet"
@@ -23,12 +29,13 @@
 </head>
 
 <body>
+    <div id="app-progress-bar"></div>
     <div id="app">
         <div class="main-wrapper">
             <div class="navbar-bg"></div>
             <nav class="navbar navbar-expand-lg main-navbar">
                 <form class="form-inline mr-auto">
-                    <ul class="navbar-nav mr-3">
+                    <ul class="navbar-nav mr-3 d-lg-none">
                         <li>
                             <a href="#" data-toggle="sidebar" class="nav-link nav-link-lg"><i
                                     class="fas fa-bars"></i></a>
@@ -39,7 +46,7 @@
                     <li class="dropdown">
                         <a href="#" data-toggle="dropdown"
                             class="nav-link dropdown-toggle nav-link-lg nav-link-user">
-                            <img alt="image" src="../assets/img/avatar/avatar-1.png" class="rounded-circle mr-1" />
+                            <img alt="image" src="{{ asset('assets/img/avatar/avatar-1.png') }}" class="rounded-circle mr-1" />
                             <div class="d-sm-none d-lg-inline-block">
                                 Halo, {{ auth()->check() ? auth()->user()->name : 'Tamu' }}
                             </div>
@@ -58,17 +65,11 @@
                                     Pengaturan Profil </a>
                             @endcan
                             <div class="dropdown-divider"></div>
-                            {{--
-							<a class="dropdown-item has-icon text-danger" href="{{ route('logout') }}">
-								<i class="fas fa-sign-out-alt"></i>
-								{{ __('Logout') }}
-							</a>
-							--}}
                             <form id="logout-form" action="{{ route('logout') }}" method="POST">
                                 @csrf
 
                                 <button type="submit" class="dropdown-item has-icon btn-link text-danger logout">
-                                    Logout
+                                    <i class="fas fa-sign-out-alt"></i> Logout
                                 </button>
                             </form>
                         </div>
@@ -78,141 +79,179 @@
 
             <div class="main-sidebar">
                 <aside id="sidebar-wrapper">
+                    {{-- 1. Full Sidebar Header (Brand + Hamburger Toggle) --}}
                     <div class="sidebar-brand">
-                        <a href="{{ route('home') }}">{{ config('app.name') }}</a>
+                        <a href="{{ route('home') }}" class="sidebar-brand-link">
+                            <span class="sidebar-brand-icon">
+                                <i class="fas fa-church"></i>
+                            </span>
+                            <div class="sidebar-brand-text">
+                                <div class="brand-title">{{ config('app.name') }}</div>
+                                <small class="brand-subtitle text-muted">Sistem Inventaris</small>
+                            </div>
+                        </a>
+                        <button type="button" class="sidebar-toggle-btn" data-toggle="sidebar" title="Kecilkan Menu" aria-label="Toggle Sidebar">
+                            <i class="fas fa-bars"></i>
+                        </button>
                     </div>
+
+                    {{-- 2. Mini Sidebar Header (Hamburger Toggle Centered) --}}
                     <div class="sidebar-brand sidebar-brand-sm">
-                        <a href="{{ route('home') }}">{{ substr(config('app.name'), 0, 2) }}</a>
+                        <button type="button" class="sidebar-toggle-btn-mini" data-toggle="sidebar" title="Perbesar Menu" aria-label="Toggle Sidebar">
+                            <i class="fas fa-bars"></i>
+                        </button>
                     </div>
+
                     <ul class="sidebar-menu">
-                        <ul class="sidebar-menu">
-                            <li class="menu-header">Dashboard</li>
-                            <li class="nav-item{{ request()->routeIs('home') ? ' active' : '' }}">
-                                <a href="{{ route('home') }}" class="nav-link">
-                                    <i class="fas fa-fire"></i><span>Dashboard</span>
-                                </a>
-                            </li>
+                        {{-- 1. MENU UTAMA --}}
+                        <li class="menu-header">Menu Utama</li>
+                        <li class="nav-item {{ request()->routeIs('home') ? 'active' : '' }}">
+                            <a href="{{ route('home') }}" class="nav-link">
+                                <i class="fas fa-layer-group"></i> <span>Dashboard</span>
+                            </a>
+                        </li>
+                        @can('scan barang')
+                        <li class="nav-item {{ request()->routeIs('scan-barang') ? 'active' : '' }}">
+                            <a href="{{ route('scan-barang') }}" class="nav-link">
+                                <i class="fas fa-qrcode"></i> <span>Scan QR Barang</span>
+                            </a>
+                        </li>
+                        @endcan
 
-                            {{-- Menu Scanner --}}
-                            <li class="menu-header">Scanner</li>
-                            @can('scan barang')
-                                <li class="nav-item">
-                                    <a href="{{ route('scan-barang') }}" class="nav-link">
-                                        <i class="fas fa-qrcode"></i>
-                                        <span>Scan Barang</span>
-                                    </a>
-                                </li>
-                            @endcan
-                            <li class="menu-header">Peminjaman</li>
-                            <li class="nav-item {{ request()->routeIs('item-lendings.*') ? 'active' : '' }}">
-                                <a href="{{ route('item-lendings.index') }}" class="nav-link">
-                                    <i class="fas fa-hand-holding"></i> <span>Peminjaman Barang</span>
-                                </a>
-                            </li>
-                            <li class="nav-item {{ request()->routeIs('room-bookings.*') ? 'active' : '' }}">
-                                <a href="{{ route('room-bookings.index') }}" class="nav-link">
-                                    <i class="fas fa-calendar-check"></i> <span>Jadwal Ruangan</span>
-                                </a>
-                            </li>
-                            <li class="menu-header">Stock Opname</li>
-                            @can('lihat stock opname')
-                                <li
-                                    class="nav-item dropdown{{ request()->routeIs('stock-opname.index') ? ' active' : '' }}">
-                                    <a href="{{ route('stock-opname.index') }}" class="nav-link"><i
-                                            class="fas fa-boxes-stacked"></i> <span>Stock Opname</span></a>
-                                </li>
-                            @endcan
+                        {{-- 2. OPERASIONAL & LAYANAN --}}
+                        <li class="menu-header">Operasional & Layanan</li>
+                        <li class="nav-item {{ request()->routeIs('item-lendings.*') ? 'active' : '' }}">
+                            <a href="{{ route('item-lendings.index') }}" class="nav-link">
+                                <i class="fas fa-hand-holding"></i> <span>Peminjaman Barang</span>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('room-bookings.*') ? 'active' : '' }}">
+                            <a href="{{ route('room-bookings.index') }}" class="nav-link">
+                                <i class="fas fa-calendar-check"></i> <span>Jadwal Ruangan</span>
+                            </a>
+                        </li>
+                        @can('lihat stock opname')
+                        <li class="nav-item {{ request()->routeIs('stock-opname.*') ? 'active' : '' }}">
+                            <a href="{{ route('stock-opname.index') }}" class="nav-link">
+                                <i class="fas fa-clipboard-check"></i> <span>Stock Opname</span>
+                            </a>
+                        </li>
+                        @endcan
+                        <li class="nav-item {{ request()->routeIs('servis.*') ? 'active' : '' }}">
+                            <a href="{{ route('servis.index') }}" class="nav-link">
+                                <i class="fas fa-wrench"></i> <span>Servis Barang</span>
+                            </a>
+                        </li>
 
-                            <li class="menu-header">Servis Barang</li>
+                        {{-- 3. LAPORAN & AUDIT --}}
+                        <li class="menu-header">Laporan & Audit</li>
+                        <li class="nav-item {{ request()->routeIs('laporan.penyusutan.*') ? 'active' : '' }}">
+                            <a href="{{ route('laporan.penyusutan.index') }}" class="nav-link">
+                                <i class="fas fa-chart-line"></i> <span>Laporan Penyusutan</span>
+                            </a>
+                        </li>
+                        @can('hapus barang')
+                        <li class="nav-item {{ request()->routeIs('laporan.pelepasan.*') ? 'active' : '' }}">
+                            <a href="{{ route('laporan.pelepasan.index') }}" class="nav-link">
+                                <i class="fas fa-arrow-up-from-bracket"></i> <span>Laporan Pelepasan</span>
+                            </a>
+                        </li>
+                        @endcan
 
-                            <li class="nav-item dropdown{{ request()->routeIs('servis.index') ? ' active' : '' }}">
-                                <a href="{{ route('servis.index') }}" class="nav-link">
-                                    <i class="fas fa-tools"></i> <span>Service Barang</span>
-                                </a>
-                            </li>
+                        {{-- 4. DATA MASTER ASET --}}
+                        <li class="menu-header">Data Master Aset</li>
+                        @can('lihat barang')
+                        <li class="nav-item {{ request()->routeIs('barang.*') ? 'active' : '' }}">
+                            <a href="{{ route('barang.index') }}" class="nav-link">
+                                <i class="fas fa-boxes-stacked"></i> <span>Data Barang</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('lihat perolehan')
+                        <li class="nav-item {{ request()->routeIs('perolehan.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('perolehan.index') }}">
+                                <i class="fas fa-receipt"></i> <span>Data Perolehan</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('lihat gedung')
+                        <li class="nav-item {{ request()->routeIs('gedung.*') ? 'active' : '' }}">
+                            <a href="{{ route('gedung.index') }}" class="nav-link">
+                                <i class="fas fa-building"></i> <span>Peruntukan / Gedung</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('lihat ruangan')
+                        <li class="nav-item {{ request()->routeIs('ruangan.*') ? 'active' : '' }}">
+                            <a href="{{ route('ruangan.index') }}" class="nav-link">
+                                <i class="fas fa-door-open"></i> <span>Data Ruangan</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('lihat jenis barang')
+                        <li class="nav-item {{ request()->routeIs('jenis-barang.*') ? 'active' : '' }}">
+                            <a href="{{ route('jenis-barang.index') }}" class="nav-link">
+                                <i class="fas fa-tags"></i> <span>Jenis Aset Tetap</span>
+                            </a>
+                        </li>
+                        @endcan
 
+                        {{-- 5. PENGATURAN SISTEM --}}
+                        <li class="menu-header">Pengaturan Sistem</li>
+                        @can('lihat pengguna')
+                        <li class="nav-item {{ request()->routeIs('pengguna.*') ? 'active' : '' }}">
+                            <a href="{{ route('pengguna.index') }}" class="nav-link">
+                                <i class="fas fa-users-gear"></i> <span>Data Pengguna</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('lihat peran dan hak akses')
+                        <li class="nav-item {{ request()->routeIs('peran-dan-hak-akses.*') ? 'active' : '' }}">
+                            <a href="{{ route('peran-dan-hak-akses.index') }}" class="nav-link">
+                                <i class="fas fa-shield-halved"></i> <span>Peran & Hak Akses</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('mengatur profile')
+                        <li class="nav-item {{ request()->routeIs('profile.*') ? 'active' : '' }}">
+                            <a href="{{ route('profile.index') }}" class="nav-link">
+                                <i class="fas fa-user-gear"></i> <span>Pengaturan Profil</span>
+                            </a>
+                        </li>
+                        @endcan
+                    </ul>
 
-                            <li class="menu-header">Manajemen</li>
-                            @can('lihat barang')
-                                <li class="nav-item dropdown{{ request()->routeIs('barang.index') ? ' active' : '' }}">
-                                    <a href="{{ route('barang.index') }}" class="nav-link"><i
-                                            class="fas fa-boxes-stacked"></i> <span>Data
-                                            Barang</span></a>
-                                </li>
-                                @endcan @can('lihat perolehan')
-                                <li class="nav-item dropdown{{ request()->routeIs('perolehan.index') ? ' active' : '' }}">
-                                    <a class="nav-link" href="{{ route('perolehan.index') }}"><i
-                                            class="far fa-face-laugh"></i>
-                                        <span>Data Perolehan</span></a>
-                                </li>
-                                @endcan @can('lihat gedung')
-                                <li class="nav-item dropdown{{ request()->routeIs('gedung.index') ? ' active' : '' }}">
-                                    <a href="{{ route('gedung.index') }}" class="nav-link"><i class="fas fa-building"></i>
-                                        <span>Data
-                                            Peruntukan Barang</span></a>
-                                </li>
-                                @endcan @can('lihat ruangan')
-                                <li class="nav-item dropdown{{ request()->routeIs('ruangan.index') ? ' active' : '' }}">
-                                    <a href="{{ route('ruangan.index') }}" class="nav-link"><i
-                                            class="fas fa-map-location-dot"></i> <span>Data
-                                            Ruangan</span></a>
-                                </li>
-                            @endcan
-                            @can('lihat jenis barang')
-                                <li class="nav-item{{ request()->routeIs('jenis-barang.index') ? ' active' : '' }}">
-                                    <a href="{{ route('jenis-barang.index') }}" class="nav-link">
-                                        <i class="fas fa-tags"></i> <span>Data Jenis Aset Tetap</span>
-                                    </a>
-                                </li>
-                            @endcan
-                            @can('lihat pengguna')
-                                <li class="nav-item dropdown{{ request()->routeIs('pengguna.index') ? ' active' : '' }}">
-                                    <a href="{{ route('pengguna.index') }}" class="nav-link"><i
-                                            class="fas fa-users"></i>
-                                        <span>Data
-                                            Pengguna</span></a>
-                                </li>
-                            @endcan
+                    <div class="mt-4 mb-4 p-3 hide-sidebar-mini">
+                        <form id="logout-form" action="{{ route('logout') }}" method="POST">
+                            <button type="submit" class="btn btn-outline-danger btn-block logout shadow-sm">
+                                <i class="fas fa-fw fa-sign-out-alt mr-1"></i>
+                                Keluar Sistem
+                            </button>
+                            @csrf
+                        </form>
+                    </div>
 
-                            <li class="menu-header">Pengaturan</li>
-                            @can('mengatur profile')
-                                <li class="nav-item dropdown{{ request()->routeIs('profile.index') ? ' active' : '' }}">
-                                    <a href="{{ route('profile.index') }}" class="nav-link"><i class="fas fa-cog"></i>
-                                        <span>Pengaturan
-                                            Profil</span></a>
-                                </li>
-                                @endcan @can('lihat peran dan hak akses')
-                                <li
-                                    class="nav-item dropdown{{ request()->routeIs('peran-dan-hak-akses.index') ? ' active' : '' }}">
-                                    <a href="{{ route('peran-dan-hak-akses.index') }}" class="nav-link"><i
-                                            class="fas fa-user-shield"></i>
-                                        <span>Peran & Hak Akses</span></a>
-                                </li>
-                            @endcan
-                        </ul>
-
-                        <div class="mt-4 mb-4 p-3 hide-sidebar-mini">
-                            <form id="logout-form" action="{{ route('logout') }}" method="POST">
-                                <button type="submit" class="btn btn-danger btn-lg btn-block btn-icon-split logout">
-                                    <i class="fas fa-fw fa-sign-out-alt"></i>
-                                    Logout
-                                </button>
-                                @csrf
-                            </form>
-                        </div>
+                    <div class="mt-3 mb-4 d-none show-sidebar-mini text-center">
+                        <form id="logout-form-mini" action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="btn btn-light text-danger logout rounded-circle p-0" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #fee2e2;" data-toggle="tooltip" data-placement="right" title="Keluar Sistem">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </form>
+                    </div>
                 </aside>
             </div>
 
             <!-- Main Content -->
             <div class="main-content">
                 <section class="section">
-                    <div class="section-header">
-                        @unless (Request::is('route-untuk-qrcode*'))
-                            @isset($page_heading)
+                    @unless (Request::is('route-untuk-qrcode*'))
+                        @isset($page_heading)
+                            <div class="section-header">
                                 <h1>{{ $page_heading }}</h1>
-                            @endisset
-                        @endunless
-                    </div>
+                            </div>
+                        @endisset
+                    @endunless
 
                     {{ $slot }}
                 </section>
@@ -237,7 +276,7 @@
 
     <!-- Template JS File -->
     <script src="{{ url('assets/js/scripts.js') }}"></script>
-    <script src="{{ url('assets/js/custom.js') }}"></script>
+    <script src="{{ url('assets/js/custom.js') }}?v={{ time() }}"></script>
 
     <!-- Page Specific JS File -->
     <script src="{{ url('assets/js/page/index-0.js') }}"></script>

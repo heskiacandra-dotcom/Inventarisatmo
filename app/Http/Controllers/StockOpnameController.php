@@ -13,7 +13,19 @@ class StockOpnameController extends Controller
 
     public function index()
     {
-        $query = Commodity::query()->with('commodity_location', 'commodity_acquisition');
+        $query = Commodity::query()->with('commodity_location', 'commodity_acquisition', 'latestStockOpname')->where('aktif', 1);
+
+        // Filter Pencarian
+        $query->when(request()->filled('search'), function ($q) {
+            $search = request('search');
+            return $q->where(function ($sub) use ($search) {
+                $sub->where('name', 'like', "%{$search}%")
+                    ->orWhere('item_code', 'like', "%{$search}%")
+                    ->orWhere('item_number', 'like', "%{$search}%")
+                    ->orWhere('brand', 'like', "%{$search}%")
+                    ->orWhere('material', 'like', "%{$search}%");
+            });
+        });
 
         // Filter sama seperti commodity index
         $query->when(request()->filled('condition'), function ($q) {
@@ -40,10 +52,34 @@ class StockOpnameController extends Controller
             return $q->where('brand', request('brand'));
         });
 
-        $commodities = $query->latest()->get();
-        $date_of_purchases = Commodity::pluck('date_of_purchase')->unique()->sort();
-        $commodity_brands = Commodity::pluck('brand')->unique()->sort();
-        $commodity_materials = Commodity::pluck('material')->unique()->sort();
+        $perPage = request()->integer('per_page', 25);
+        if (!in_array($perPage, [10, 25, 50, 100, 250])) {
+            $perPage = 25;
+        }
+
+        $commodities = $query->latest()->paginate($perPage)->withQueryString();
+
+        $date_of_purchases = Commodity::where('aktif', 1)
+            ->whereNotNull('date_of_purchase')
+            ->where('date_of_purchase', '!=', '')
+            ->distinct()
+            ->orderBy('date_of_purchase', 'ASC')
+            ->pluck('date_of_purchase');
+
+        $commodity_brands = Commodity::where('aktif', 1)
+            ->whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->distinct()
+            ->orderBy('brand', 'ASC')
+            ->pluck('brand');
+
+        $commodity_materials = Commodity::where('aktif', 1)
+            ->whereNotNull('material')
+            ->where('material', '!=', '')
+            ->distinct()
+            ->orderBy('material', 'ASC')
+            ->pluck('material');
+
         $commodity_acquisitions = CommodityAcquisition::orderBy('name', 'ASC')->get();
         $commodity_locations = CommodityLocation::orderBy('name', 'ASC')->get();
 
@@ -56,6 +92,7 @@ class StockOpnameController extends Controller
             'commodity_materials'
         ));
     }
+
 
     private function getConditionText($condition)
     {
@@ -104,8 +141,9 @@ class StockOpnameController extends Controller
             ]);
         }
 
-        return redirect()->route('stock-opname.index')
+        return redirect()->back()
             ->with('success', 'Stock opname berhasil disimpan!');
+
     }
     public function storeSingle(Request $request)
     {
@@ -145,8 +183,8 @@ class StockOpnameController extends Controller
     {
         $request->validate(['code' => 'required|string']);
 
-        // Ubah dari 'item_code' menjadi 'id'
-        $commodity = Commodity::where('id', $request->code)
+        $commodity = Commodity::where('aktif', 1)
+            ->where('id', $request->code)
             ->with('commodity_location', 'stockOpnames')
             ->first();
 

@@ -32,7 +32,19 @@ class CommodityController extends Controller
      */
     public function index()
     {
-        $query = Commodity::query()->with('commodity_location', 'commodity_acquisition');
+        $query = Commodity::query()->with('commodity_location', 'commodity_acquisition')->where('aktif', 1);
+
+        // Search filter (nama barang, kode, nomor, merk, bahan)
+        $query->when(request()->filled('search'), function ($q) {
+            $search = request('search');
+            return $q->where(function ($sub) use ($search) {
+                $sub->where('name', 'like', "%{$search}%")
+                    ->orWhere('item_code', 'like', "%{$search}%")
+                    ->orWhere('item_number', 'like', "%{$search}%")
+                    ->orWhere('brand', 'like', "%{$search}%")
+                    ->orWhere('material', 'like', "%{$search}%");
+            });
+        });
 
         // Apply filters
         $query->when(request()->filled('condition'), function ($q) {
@@ -63,12 +75,39 @@ class CommodityController extends Controller
         $gedung = Gedung::orderBy('name', 'ASC')->get();
         $jenisBarang = JenisBarang::orderBy('name', 'ASC')->get();
 
-        $commodities = $query->latest()->get();
-        $date_of_purchases = Commodity::pluck('date_of_purchase')->unique()->sort();
-        $commodity_brands = Commodity::pluck('brand')->unique()->sort();
-        $commodity_materials = Commodity::pluck('material')->unique()->sort();
+        $perPage = request()->integer('per_page', 25);
+        if (!in_array($perPage, [10, 25, 50, 100, 250])) {
+            $perPage = 25;
+        }
+
+        // Paginasi server-side
+        $commodities = $query->latest()->paginate($perPage)->withQueryString();
+
+        // Optimized distinct dropdown queries
+        $date_of_purchases = Commodity::where('aktif', 1)
+            ->whereNotNull('date_of_purchase')
+            ->where('date_of_purchase', '!=', '')
+            ->distinct()
+            ->orderBy('date_of_purchase', 'ASC')
+            ->pluck('date_of_purchase');
+
+        $commodity_brands = Commodity::where('aktif', 1)
+            ->whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->distinct()
+            ->orderBy('brand', 'ASC')
+            ->pluck('brand');
+
+        $commodity_materials = Commodity::where('aktif', 1)
+            ->whereNotNull('material')
+            ->where('material', '!=', '')
+            ->distinct()
+            ->orderBy('material', 'ASC')
+            ->pluck('material');
+
         $commodity_acquisitions = CommodityAcquisition::orderBy('name', 'ASC')->get();
         $commodity_locations = CommodityLocation::orderBy('name', 'ASC')->get();
+
 
         // Clone query dan reset order by
         $filteredQuery = clone $query;
@@ -153,12 +192,34 @@ class CommodityController extends Controller
 
     /**
      * Remove the specified resource from storage.
+     * Disabled — gunakan lepas() untuk pelepasan barang.
      */
     public function destroy(Commodity $commodity)
     {
-        $commodity->delete();
+        // Hard delete dinonaktifkan; pelepasan dilakukan via lepas()
+        abort(403, 'Hapus permanen tidak diizinkan. Gunakan fitur Lepas Barang.');
+    }
 
-        return to_route('barang.index')->with('success', 'Data berhasil dihapus!');
+    /**
+     * Lepas (disposal) barang — soft delete dengan data pelepasan.
+     */
+    public function lepas(Request $request, Commodity $commodity)
+    {
+        $this->authorize('hapus barang');
+
+        $validated = $request->validate([
+            'tanggal_pelepasan' => 'required|date',
+            'metode_pelepasan'  => 'required|in:Dijual,Dihapusbukukan (Rusak Total),Hilang',
+            'catatan_pelepasan' => 'nullable|string|max:1000',
+        ]);
+
+        $commodity->lepas(
+            $validated['tanggal_pelepasan'],
+            $validated['metode_pelepasan'],
+            $validated['catatan_pelepasan'] ?? null
+        );
+
+        return to_route('barang.index')->with('success', 'Barang berhasil dilepas!');
     }
 
     /**
@@ -170,14 +231,26 @@ class CommodityController extends Controller
     {
         $this->authorize('print barang');
 
-        $query = Commodity::query()->with('commodity_location', 'commodity_acquisition');
+        $query = Commodity::query()->with('commodity_location', 'commodity_acquisition')->where('aktif', 1);
 
         // Terapkan filter yang sama seperti di index()
+        $query->when(request()->filled('search'), function ($q) {
+            $search = request('search');
+            return $q->where(function ($sub) use ($search) {
+                $sub->where('name', 'like', "%{$search}%")
+                    ->orWhere('item_code', 'like', "%{$search}%")
+                    ->orWhere('item_number', 'like', "%{$search}%")
+                    ->orWhere('brand', 'like', "%{$search}%")
+                    ->orWhere('material', 'like', "%{$search}%");
+            });
+        });
+
         $query->when(
             request()->filled('condition'),
         fn($q) =>
         $q->where('condition', request('condition'))
         );
+
 
         $query->when(
             request()->filled('commodity_location_id'),
@@ -261,9 +334,11 @@ class CommodityController extends Controller
 
     public function apiShowByCode($kode)
     {
-        $commodity = Commodity::with(['commodity_location', 'commodity_acquisition'])
-            ->where('item_code', $kode) // cari berdasarkan kode barang
-            ->orWhere('id', $kode) // atau berdasarkan id
+        $commodity = Commodity::where('aktif', 1)
+            ->with(['commodity_location', 'commodity_acquisition'])
+            ->where(function ($q) use ($kode) {
+                $q->where('item_code', $kode)->orWhere('id', $kode);
+            })
             ->first();
 
         if (!$commodity) {
@@ -278,10 +353,10 @@ class CommodityController extends Controller
         ];
         $commodity_condition_text = $conditionMap[$commodity->condition] ?? 'Belum di SO';
 
-        // === Hitung kondisi barang ===
-        $totalCount = Commodity::count();
+        // === Hitung kondisi barang (hanya aktif) ===
+        $totalCount = Commodity::where('aktif', 1)->count();
 
-        $commodity_condition_count = Commodity::selectRaw('`condition`, count(*) as count')
+        $commodity_condition_count = Commodity::where('aktif', 1)->selectRaw('`condition`, count(*) as count')
             ->groupBy('condition')
             ->get()
             ->map(function ($row) use ($conditionMap) {
@@ -322,7 +397,8 @@ class CommodityController extends Controller
 
     public function apiShow($id)
     {
-        $commodity = Commodity::with(['commodity_location', 'commodity_acquisition', 'jenisBarang', 'gedung'])
+        $commodity = Commodity::where('aktif', 1)
+            ->with(['commodity_location', 'commodity_acquisition', 'jenisBarang', 'gedung'])
             ->findOrFail($id);
 
         // Mapping kondisi

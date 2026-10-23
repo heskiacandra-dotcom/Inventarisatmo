@@ -122,5 +122,21 @@
                 },
             });
         });
+        // === LEPAS MODAL ===
+        $(".lepas-modal").on("click", function () {
+            const id   = $(this).data("id");
+            const nama = $(this).data("nama");
+
+            // Isi nama barang
+            $("#lepas_commodity #lepas_nama_barang").text(nama);
+
+            // Set action form ke route lepas
+            let lepasURL = "{{ route('barang.lepas', ':id') }}".replace(":id", id);
+            $("#lepas_form").attr("action", lepasURL);
+
+            // Reset field
+            $("#lepas_metode_pelepasan").val("").trigger("change");
+            $("#lepas_catatan_pelepasan").val("");
+        });
     });
 </script>

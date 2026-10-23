@@ -38,6 +38,8 @@ class CommodityRepository
     public function countCommodityEachDate()
     {
         return $this->model->selectRaw('COUNT(`date_of_purchase`) AS count, date_of_purchase')
+            ->whereNotNull('date_of_purchase')
+            ->where('date_of_purchase', '!=', '')
             ->groupBy('date_of_purchase')
             ->orderBy('date_of_purchase')
             ->get();
@@ -49,8 +51,11 @@ class CommodityRepository
     public function countCommodityByMaterial()
     {
         return $this->model->selectRaw('COUNT(`material`) AS count, material')
+            ->whereNotNull('material')
+            ->where('material', '!=', '')
+            ->where('material', '!=', '-')
             ->groupBy('material')
-            ->orderBy('material')
+            ->orderByDesc('count')
             ->get();
     }
 
@@ -60,8 +65,12 @@ class CommodityRepository
     public function countCommodityByBrand()
     {
         return $this->model->selectRaw('COUNT(`brand`) AS count, brand')
+            ->whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->where('brand', '!=', '-')
             ->groupBy('brand')
-            ->orderBy('brand')
+            ->orderByDesc('count')
+            ->take(8)
             ->get();
     }
 }

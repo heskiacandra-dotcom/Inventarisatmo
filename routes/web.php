@@ -14,6 +14,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LaporanPenyusutanController;
+use App\Http\Controllers\LaporanPelepasanController;
+use App\Http\Controllers\ItemLendingController;
+use App\Http\Controllers\RoomBookingController;
 use Illuminate\Support\Facades\Route;
 
 /* |-------------------------------------------------------------------------- | Web Routes |-------------------------------------------------------------------------- | | Here is where you can register web routes for your application. These | routes are loaded by the RouteServiceProvider within a group which | contains the "web" middleware group. Now create something great! | */
@@ -26,8 +29,6 @@ Route::get('/api/public/barang/{item_code}', [CommodityController::class , 'apiS
 Route::post('/api/public/lapor-lokasi', [CommodityController::class , 'reportLocation'])->name('api.barang.reportLocation');
 
 // Halaman login tetap bisa diakses lewat tombol
-Route::get('/login', [LoginController::class , 'showLoginForm'])->name('login')->middleware('guest');
-
 Route::get('/login', [LoginController::class , 'showLoginForm'])->name('login')->middleware('guest');
 Route::post('/login', [LoginController::class , 'login'])->middleware('guest');
 Route::post('/logout', LogoutController::class)->name('logout')->middleware('auth');
@@ -44,6 +45,7 @@ Route::middleware('auth')->group(function () {
         ->name('api.barang.show');
 
     Route::resource('barang', CommodityController::class)->except('create', 'edit', 'show')->parameter('barang', 'commodity');
+    Route::post('/barang/{commodity}/lepas', [CommodityController::class, 'lepas'])->name('barang.lepas');
     Route::prefix('barang')->name('barang.')->group(function () {
             //Route::get('/download-pdf', [CommodityController::class, 'downloadPdf'])->name('download-pdf');
             Route::post('/barang/print', [CommodityController::class , 'print'])->name('barang.print');
@@ -63,8 +65,10 @@ Route::middleware('auth')->group(function () {
         Route::patch('/servis/{id}/finish', [CommodityServiceController::class , 'markAsFinished'])
             ->name('servis.finish');
 
-        Route::get('/laporan/penyusutan', [LaporanPenyusutanController::class , 'index'])->name('laporan.penyusutan.index');
-        Route::get('/laporan/penyusutan/export', [LaporanPenyusutanController::class , 'export'])->name('laporan.penyusutan.export');
+        Route::get('/laporan/penyusutan', [LaporanPenyusutanController::class, 'index'])->name('laporan.penyusutan.index');
+        Route::get('/laporan/penyusutan/export', [LaporanPenyusutanController::class, 'export'])->name('laporan.penyusutan.export');
+        Route::put('/laporan/penyusutan/{id}/parameter', [LaporanPenyusutanController::class, 'updateParameter'])->name('laporan.penyusutan.update-parameter');
+        Route::get('/laporan/pelepasan', [LaporanPelepasanController::class, 'index'])->name('laporan.pelepasan.index');
 
         Route::resource('perolehan', CommodityAcquisitionController::class)
             ->except('create', 'edit', 'show')
@@ -98,15 +102,13 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('peran-dan-hak-akses', RoleController::class)->parameter('peran-dan-hak-akses', 'role');
 
-        Route::resource('peminjaman-barang', ItemLendingController::class)->parameter('peminjaman-barang', 'item_lending');
-        Route::resource('peminjaman-ruangan', RoomBookingController::class)->parameter('peminjaman-ruangan', 'room_booking');
-
         // --- PEMINJAMAN BARANG & RUANGAN ---
-        Route::get('/peminjaman-barang', [App\Http\Controllers\ItemLendingController::class , 'index'])->name('item-lendings.index');
-        Route::post('/peminjaman-barang', [App\Http\Controllers\ItemLendingController::class , 'store'])->name('item-lendings.store');
-        Route::put('/peminjaman-barang/{id}/return', [App\Http\Controllers\ItemLendingController::class , 'returnItem'])->name('item-lendings.return');
-        Route::get('/peminjaman-barang/{commodity_id}/history', [App\Http\Controllers\ItemLendingController::class , 'history'])->name('item-lendings.history');
+        Route::get('/peminjaman-barang', [ItemLendingController::class , 'index'])->name('item-lendings.index');
+        Route::post('/peminjaman-barang', [ItemLendingController::class , 'store'])->name('item-lendings.store');
+        Route::put('/peminjaman-barang/{id}/return', [ItemLendingController::class , 'returnItem'])->name('item-lendings.return');
+        Route::get('/peminjaman-barang/{commodity_id}/history', [ItemLendingController::class , 'history'])->name('item-lendings.history');
 
-        Route::get('/peminjaman-ruangan', [App\Http\Controllers\RoomBookingController::class , 'index'])->name('room-bookings.index');
-        Route::post('/peminjaman-ruangan', [App\Http\Controllers\RoomBookingController::class , 'store'])->name('room-bookings.store');
+        Route::get('/peminjaman-ruangan', [RoomBookingController::class , 'index'])->name('room-bookings.index');
+        Route::post('/peminjaman-ruangan', [RoomBookingController::class , 'store'])->name('room-bookings.store');
+        Route::delete('/peminjaman-ruangan/{id}', [RoomBookingController::class , 'destroy'])->name('room-bookings.destroy');
     });

@@ -15,7 +15,7 @@ class CommoditiesExport implements FromCollection, ShouldAutoSize, WithHeadings,
      */
     public function collection()
     {
-        return Commodity::all();
+        return Commodity::where('aktif', 1)->with(['commodity_acquisition', 'commodity_location'])->get();
     }
 
     /**

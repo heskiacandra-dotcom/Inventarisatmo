@@ -11,7 +11,7 @@ class CommodityServiceController extends Controller
     // Halaman awal
     public function index()
     {
-        $barangServis = Commodity::with(['commodity_location.gedung', 'services' => function($query) {
+        $barangServis = Commodity::where('aktif', 1)->with(['commodity_location.gedung', 'services' => function($query) {
             $query->orderBy('tanggal_diservis', 'desc');
         }])
             ->whereHas('services', function ($query) {
@@ -26,7 +26,7 @@ class CommodityServiceController extends Controller
 
     public function search(Request $request)
     {
-        $barang = Commodity::with(['commodity_location.gedung', 'services' => function($query) {
+        $barang = Commodity::where('aktif', 1)->with(['commodity_location.gedung', 'services' => function($query) {
             $query->orderBy('tanggal_diservis', 'desc');
         }])
             ->where('item_code', $request->item_code)

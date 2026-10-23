@@ -152,21 +152,50 @@
 
                     <div class="row">
                         <div class="col-lg-4 col-12">
-                            <div class="form-group">
-                                <label for="date_of_purchase">Tanggal Pembelian<span
-                                        class="font-weight-bold text-danger">*</span></label>
-                                <input type="text"
-                                    class="form-control @error('date_of_purchase', 'store') is-invalid @enderror"
-                                    name="date_of_purchase" id="date_of_purchase"
-                                    value="{{ old('date_of_purchase') }}"
-                                    placeholder="Masukkan tanggal pembelian barang..">
-                                @error('date_of_purchase', 'store')
-                                    <div class="d-block invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
+    <div class="form-group">
+        <label>Tanggal Pembelian<span class="font-weight-bold text-danger">*</span></label>
+
+        {{-- Toggle Tombol --}}
+        <div class="btn-group btn-group-sm d-flex mb-2" role="group">
+            <button type="button" class="btn btn-outline-primary active" id="btn_mode_full" onclick="setDateMode('full')">
+                <i class="fas fa-calendar-alt mr-1"></i> Tanggal Lengkap
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="btn_mode_year" onclick="setDateMode('year')">
+                <i class="fas fa-calendar mr-1"></i> Tahun Saja
+            </button>
+        </div>
+
+        {{-- Input Tanggal Lengkap --}}
+        <div id="input_date_full">
+            <input type="date" 
+                class="form-control @error('date_of_purchase', 'store') is-invalid @enderror"
+                id="date_of_purchase_full"
+                name="date_of_purchase" 
+                value="{{ old('date_of_purchase') && strlen(old('date_of_purchase')) > 4 ? old('date_of_purchase') : '' }}">
+            <small class="form-text text-muted">Format: BB/HH/TTTT</small>
+        </div>
+
+        {{-- Input Tahun Saja --}}
+        <div id="input_date_year" style="display:none;">
+            <input type="number" 
+                class="form-control @error('date_of_purchase', 'store') is-invalid @enderror"
+                id="date_of_purchase_year"
+                name="date_of_purchase" 
+                value="{{ old('date_of_purchase') && strlen(old('date_of_purchase')) == 4 ? old('date_of_purchase') : '' }}"
+                placeholder="Contoh: 2024" min="1900" max="{{ date('Y') }}" disabled> {{-- Default disabled --}}
+            <small class="form-text text-muted">Masukkan tahun pembelian (4 digit)</small>
+        </div>
+
+        {{-- ERROR FEEDBACK (Cukup satu saja karena name-nya sama) --}}
+        @error('date_of_purchase', 'store')
+            <div class="invalid-feedback d-block">
+                {{ $message }}
+            </div>
+        @enderror
+        
+        {{-- HAPUS INPUT HIDDEN / KOTAK KUNING ANDA DISINI --}}
+    </div>
+</div>
                         <div class="col-lg-4 col-12">
                             <div class="form-group">
                                 <label for="commodity_acquisition_id">Asal Perolehan<span
@@ -291,3 +320,76 @@
         </div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        // Logika Ganti Mode
+        window.setDateMode = function(mode) {
+            var fullDiv = $('#input_date_full');
+            var yearDiv = $('#input_date_year');
+            
+            var inputFull = $('#date_of_purchase_full');
+            var inputYear = $('#date_of_purchase_year');
+
+            var btnFull = $('#btn_mode_full');
+            var btnYear = $('#btn_mode_year');
+
+            if (mode === 'full') {
+                // Tampilan
+                fullDiv.show();
+                yearDiv.hide();
+                
+                // Button Style
+                btnFull.addClass('active btn-outline-primary').removeClass('btn-outline-secondary');
+                btnYear.removeClass('active btn-outline-primary').addClass('btn-outline-secondary');
+                
+                // LOGIKA PENTING: Enable tanggal, Disable tahun
+                inputFull.prop('disabled', false); // Aktifkan input tanggal
+                inputYear.prop('disabled', true);  // Matikan input tahun (tidak akan dikirim ke server)
+                
+            } else {
+                // Tampilan
+                fullDiv.hide();
+                yearDiv.show();
+
+                // Button Style
+                btnYear.addClass('active btn-outline-primary').removeClass('btn-outline-secondary');
+                btnFull.removeClass('active btn-outline-primary').addClass('btn-outline-secondary');
+
+                // LOGIKA PENTING: Enable tahun, Disable tanggal
+                inputYear.prop('disabled', false); // Aktifkan input tahun
+                inputFull.prop('disabled', true);  // Matikan input tanggal
+            }
+        }
+
+        // Cek Error Laravel saat halaman reload
+        @if ($errors->store->any())
+            $('#commodity_create_modal').modal('show');
+        @endif
+
+        // Inisialisasi Awal berdasarkan Old Data
+        @if(old('date_of_purchase'))
+            var oldVal = "{{ old('date_of_purchase') }}";
+            if (/^\d{4}$/.test(oldVal)) {
+                setDateMode('year');
+            } else {
+                setDateMode('full');
+            }
+        @else
+            // Default Start
+            setDateMode('full');
+        @endif
+        
+        // Validasi Client-Side agar modal tidak tutup jika kosong
+        $('#commodity_create_modal form').on('submit', function(e) {
+            var mode = $('#input_date_full').is(':visible') ? 'full' : 'year';
+            var val = mode === 'full' ? $('#date_of_purchase_full').val() : $('#date_of_purchase_year').val();
+            
+            if(!val) {
+                e.preventDefault(); // Jangan submit
+                alert('Silakan isi tanggal atau tahun pembelian!');
+                return false;
+            }
+        });
+    });
+</script>

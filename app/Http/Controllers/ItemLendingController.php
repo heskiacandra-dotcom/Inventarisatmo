@@ -8,16 +8,41 @@ use App\ItemLending;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ItemLendingController extends Controller
 {
+    private function ensureSchemaExists(): void
+    {
+        try {
+            if (!Schema::hasTable('item_lendings')) {
+                Schema::create('item_lendings', function (\Illuminate\Database\Schema\Blueprint $table) {
+                    $table->id();
+                    $table->unsignedBigInteger('commodity_id')->index();
+                    $table->string('user_name');
+                    $table->unsignedBigInteger('origin_location_id')->nullable()->index();
+                    $table->unsignedBigInteger('return_location_id')->nullable()->index();
+                    $table->date('start_date');
+                    $table->date('end_date')->nullable();
+                    $table->time('start_time');
+                    $table->time('end_time')->nullable();
+                    $table->date('actual_return_date')->nullable();
+                    $table->time('actual_return_time')->nullable();
+                    $table->string('status')->default('borrowed');
+                    $table->text('notes')->nullable();
+                    $table->timestamps();
+                });
+            }
+        } catch (\Throwable $e) {}
+    }
+
     public function index(Request $request)
     {
-        // $this->authorize('viewAny', ItemLending::class); // Aktifkan jika policy sudah ada
+        $this->ensureSchemaExists();
 
         $locations = CommodityLocation::orderBy('name')->get();
 
-        // Relasi disesuaikan dengan Commodity.php Anda (commodity_location)
+        // Relasi disesuaikan dengan Commodity.php (commodity_location)
         $query = Commodity::query()->with(['commodity_location', 'itemLendings' => function ($q) {
             $q->where('status', 'borrowed')->latest();
         }]);

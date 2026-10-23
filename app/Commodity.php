@@ -19,7 +19,31 @@ class Commodity extends Model
 
     protected $casts = [
         'condition' => 'integer',
+        'aktif'     => 'integer',
+        'tanggal_pelepasan' => 'date',
     ];
+
+    /**
+     * Scope: hanya barang yang masih aktif (belum dilepas)
+     */
+    public function scopeAktif($query)
+    {
+        return $query->where('aktif', 1);
+    }
+
+    /**
+     * Lepas / disposal barang — set aktif = 0 dan isi data pelepasan
+     */
+    public function lepas(string $tanggalPelepasan, string $metodePelepasan, ?string $catatanPelepasan = null): void
+    {
+        $this->update([
+            'aktif'              => 0,
+            'tanggal_pelepasan'  => $tanggalPelepasan,
+            'metode_pelepasan'   => $metodePelepasan,
+            'catatan_pelepasan'  => $catatanPelepasan,
+        ]);
+    }
+
 
     protected static function boot()
     {
@@ -120,6 +144,11 @@ class Commodity extends Model
         return $this->hasMany(CommodityStockOpname::class);
     }
 
+    public function latestStockOpname()
+    {
+        return $this->hasOne(CommodityStockOpname::class)->latestOfMany('stock_opname_at');
+    }
+
     public function services()
     {
         return $this->hasMany(CommodityService::class);
@@ -163,13 +192,82 @@ class Commodity extends Model
         };
     }
 
+    public function getHargaPerolehanAttribute()
+    {
+        return $this->price_per_item > 0 ? (float)$this->price_per_item : ($this->price > 0 ? (float)$this->price : 0);
+    }
+
+    public function getTanggalPerolehanParsedAttribute()
+    {
+        if (!empty($this->tanggal_perolehan)) {
+            try {
+                return Carbon::parse($this->tanggal_perolehan);
+            } catch (\Throwable $e) {}
+        }
+
+        if (!empty($this->date_of_purchase)) {
+            try {
+                if (preg_match('/\b(19|20)\d{2}\b/', (string)$this->date_of_purchase, $matches)) {
+                    return Carbon::createFromDate((int)$matches[0], 1, 1);
+                }
+                return Carbon::parse($this->date_of_purchase);
+            } catch (\Throwable $e) {}
+        }
+
+        return $this->created_at ? Carbon::parse($this->created_at) : now();
+    }
+
+    public function getUmurManfaatBulanAttribute()
+    {
+        return ($this->umur_manfaat && (int)$this->umur_manfaat > 0) ? (int)$this->umur_manfaat : 60;
+    }
+
+    public function getNilaiResiduValueAttribute()
+    {
+        return $this->nilai_residu ? (float)$this->nilai_residu : 0;
+    }
+
     public function getPenyusutanPerBulanAttribute()
     {
-        $harga = $this->price_per_item;
-        $umur = $this->umur_manfaat ?? 60; // default 60 bulan
-        $residu = $this->nilai_residu ?? 0;
+        $harga = $this->harga_perolehan;
+        $residu = $this->nilai_residu_value;
+        $umur = $this->umur_manfaat_bulan;
 
-        return ($harga - $residu) / $umur;
+        if ($umur <= 0) {
+            return 0;
+        }
+
+        return max(0, ($harga - $residu) / $umur);
+    }
+
+    public function getBulanBerjalanAttribute()
+    {
+        $perolehan = $this->tanggal_perolehan_parsed;
+        $umur = $this->umur_manfaat_bulan;
+        $diff = max(0, $perolehan->diffInMonths(now()));
+
+        return min($diff, $umur);
+    }
+
+    public function getAkumulasiPenyusutanAttribute()
+    {
+        $penyusutan = $this->penyusutan_per_bulan * $this->bulan_berjalan;
+        $maxPenyusutan = max(0, $this->harga_perolehan - $this->nilai_residu_value);
+
+        return min($penyusutan, $maxPenyusutan);
+    }
+
+    public function getNilaiBukuAttribute()
+    {
+        return max($this->nilai_residu_value, $this->harga_perolehan - $this->akumulasi_penyusutan);
+    }
+
+    public function getPersentasePenyusutanAttribute()
+    {
+        if ($this->harga_perolehan <= 0) {
+            return 0;
+        }
+        return min(100, round(($this->akumulasi_penyusutan / $this->harga_perolehan) * 100, 1));
     }
 
     public function itemLendings()

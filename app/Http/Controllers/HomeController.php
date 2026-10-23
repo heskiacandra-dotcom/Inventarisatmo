@@ -44,7 +44,11 @@ class HomeController extends Controller
         ];
 
         $commodity_each_date_of_purchase_count = $this->commodityRepository->countCommodityEachDate();
-        $commodity_each_location_count = CommodityLocation::has('commodities')->withCount('commodities')->get();
+        $commodity_each_location_count = CommodityLocation::has('commodities')
+            ->withCount('commodities')
+            ->orderByDesc('commodities_count')
+            ->take(12)
+            ->get();
         $commodity_by_commodity_acquisition_count = $this->commodityAcquisitionRepository
             ->countCommodityByCommodityAcquisition();
         $commodity_by_material_count = $this->commodityRepository->countCommodityByMaterial()->map(function ($commodity) {
