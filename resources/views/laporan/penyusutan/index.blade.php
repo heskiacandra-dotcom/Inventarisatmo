@@ -152,13 +152,23 @@
 
     {{-- Tabel Laporan Penyusutan --}}
     <div class="card modern-card">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
-            <h5 class="mb-0 text-dark font-weight-bold">
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center py-3 border-bottom">
+            <h5 class="mb-2 mb-md-0 text-dark font-weight-bold">
                 <i class="fas fa-table mr-2 text-primary"></i> Rincian Penyusutan Barang
             </h5>
-            <span class="badge badge-light border text-muted px-3 py-2">
-                Menampilkan <strong>{{ $commodities->count() }}</strong> Aset
-            </span>
+            <div class="d-flex align-items-center">
+                <label class="mr-2 mb-0 small text-muted font-weight-bold">Tampilkan:</label>
+                <select class="form-control form-control-sm w-auto d-inline-block shadow-sm mr-3" onchange="window.location.href = updateQueryParam('per_page', this.value)">
+                    <option value="10" @selected(request('per_page') == 10)>10</option>
+                    <option value="25" @selected(!request('per_page') || request('per_page') == 25)>25</option>
+                    <option value="50" @selected(request('per_page') == 50)>50</option>
+                    <option value="100" @selected(request('per_page') == 100)>100</option>
+                    <option value="250" @selected(request('per_page') == 250)>250</option>
+                </select>
+                <span class="badge badge-light border text-muted px-3 py-2">
+                    Total <strong>{{ number_format($commodities->total(), 0, ',', '.') }}</strong> Aset
+                </span>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -184,7 +194,7 @@
                             @endphp
                             <tr>
                                 <td class="text-center font-weight-bold text-muted align-middle">
-                                    {{ $loop->iteration }}
+                                    {{ $commodities->firstItem() + $loop->index }}
                                 </td>
                                 <td class="align-middle">
                                     <span class="badge badge-primary-light mb-1 font-family-monospace">
@@ -262,6 +272,15 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top">
+                <div class="text-muted small mb-2 mb-md-0">
+                    Menampilkan <strong>{{ $commodities->firstItem() ?? 0 }}</strong> sampai <strong>{{ $commodities->lastItem() ?? 0 }}</strong> dari <strong>{{ number_format($commodities->total(), 0, ',', '.') }}</strong> data aset
+                </div>
+                <div>
+                    {{ $commodities->withQueryString()->links() }}
+                </div>
             </div>
         </div>
     </div>
@@ -366,18 +385,14 @@
 
     @push('js')
     <script>
-        $(document).ready(function() {
-            // Inisialisasi DataTable jika lebih dari 10 data
-            if ($('#tablePenyusutan tbody tr').length > 5) {
-                $('#tablePenyusutan').DataTable({
-                    "language": {
-                        "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json"
-                    },
-                    "pageLength": 25,
-                    "order": []
-                });
-            }
+        function updateQueryParam(key, value) {
+            let url = new URL(window.location.href);
+            url.searchParams.set(key, value);
+            url.searchParams.set('page', '1');
+            return url.toString();
+        }
 
+        $(document).ready(function() {
             // Handler tombol edit parameter
             $('.btn-edit-parameter').on('click', function() {
                 var id = $(this).data('id');

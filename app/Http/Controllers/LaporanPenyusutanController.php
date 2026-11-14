@@ -13,78 +13,91 @@ use App\Exports\PenyusutanExport;
 
 class LaporanPenyusutanController extends Controller
 {
-    /**
-     * Ensure database columns exist (self-healing for unmigrated environments)
-     */
-    private function ensureSchemaExists(): void
-    {
-        try {
-            if (Schema::hasTable('commodities')) {
-                Schema::table('commodities', function ($table) {
-                    if (!Schema::hasColumn('commodities', 'tanggal_perolehan')) {
-                        $table->date('tanggal_perolehan')->nullable();
-                    }
-                    if (!Schema::hasColumn('commodities', 'umur_manfaat')) {
-                        $table->integer('umur_manfaat')->default(60)->nullable();
-                    }
-                    if (!Schema::hasColumn('commodities', 'nilai_residu')) {
-                        $table->decimal('nilai_residu', 15, 2)->default(0)->nullable();
-                    }
-                    if (!Schema::hasColumn('commodities', 'aktif')) {
-                        $table->tinyInteger('aktif')->default(1)->nullable();
-                    }
-                });
-            }
-        } catch (\Throwable $e) {
-            // Silently ignore if table altering is restricted
-        }
-    }
-
     public function index(Request $request)
     {
-        $this->ensureSchemaExists();
-
-        $query = Commodity::query()
-            ->with(['commodity_location', 'jenisBarang', 'gedung', 'commodity_acquisition'])
-            ->where(function ($q) {
-                if (Schema::hasColumn('commodities', 'aktif')) {
-                    $q->where('aktif', 1)->orWhereNull('aktif');
-                }
-            });
+        $baseQuery = Commodity::query()->where('aktif', 1);
 
         // Filter Lokasi / Ruangan
         if ($request->filled('location_id')) {
-            $query->where('commodity_location_id', $request->location_id);
+            $baseQuery->where('commodity_location_id', $request->location_id);
         }
 
         // Filter Jenis Barang
         if ($request->filled('jenis_barang_id')) {
-            $query->where('jenis_barang_id', $request->jenis_barang_id);
+            $baseQuery->where('jenis_barang_id', $request->jenis_barang_id);
         }
 
         // Filter Kondisi
         if ($request->filled('condition')) {
-            $query->where('condition', $request->condition);
+            $baseQuery->where('condition', $request->condition);
         }
 
         // Filter Pencarian Teks
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
+            $baseQuery->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('item_code', 'like', "%{$search}%")
                   ->orWhere('brand', 'like', "%{$search}%");
             });
         }
 
-        $commodities = $query->latest()->get();
+        // Hitung akumulasi statistik secara presisi dan efisien dalam satu pass
+        $statsItems = (clone $baseQuery)->select([
+            'id', 'price', 'price_per_item', 'tanggal_perolehan', 'date_of_purchase', 'umur_manfaat', 'nilai_residu'
+        ])->get();
 
-        // Hitung akumulasi statistik
-        $totalAset = $commodities->count();
-        $totalHargaPerolehan = $commodities->sum(fn($c) => $c->harga_perolehan);
-        $totalPenyusutanBulanan = $commodities->sum(fn($c) => $c->penyusutan_per_bulan);
-        $totalAkumulasiPenyusutan = $commodities->sum(fn($c) => $c->akumulasi_penyusutan);
-        $totalNilaiBuku = $commodities->sum(fn($c) => $c->nilai_buku);
+        $totalAset = $statsItems->count();
+        $totalHargaPerolehan = 0;
+        $totalPenyusutanBulanan = 0;
+        $totalAkumulasiPenyusutan = 0;
+        $totalNilaiBuku = 0;
+
+        $nowYear = (int)date('Y');
+        $nowMonth = (int)date('n');
+
+        foreach ($statsItems as $c) {
+            $harga = $c->price_per_item > 0 ? (float)$c->price_per_item : ($c->price > 0 ? (float)$c->price : 0);
+            $residu = $c->nilai_residu ? (float)$c->nilai_residu : 0;
+            $umur = ($c->umur_manfaat && (int)$c->umur_manfaat > 0) ? (int)$c->umur_manfaat : 60;
+
+            $pYear = $nowYear;
+            $pMonth = 1;
+            if (!empty($c->tanggal_perolehan)) {
+                $pYear = (int)substr($c->tanggal_perolehan, 0, 4);
+                $pMonth = (int)substr($c->tanggal_perolehan, 5, 2);
+            } elseif (!empty($c->date_of_purchase)) {
+                if (preg_match('/\b(19|20)\d{2}\b/', (string)$c->date_of_purchase, $m)) {
+                    $pYear = (int)$m[0];
+                    $pMonth = 1;
+                }
+            }
+
+            $diffMonths = max(0, ($nowYear - $pYear) * 12 + ($nowMonth - $pMonth));
+            $bulanBerjalan = min($diffMonths, $umur);
+
+            $penyusutanPerBulan = $umur > 0 ? max(0, ($harga - $residu) / $umur) : 0;
+            $maxPenyusutan = max(0, $harga - $residu);
+            $akumulasi = min($penyusutanPerBulan * $bulanBerjalan, $maxPenyusutan);
+            $nilaiBuku = max($residu, $harga - $akumulasi);
+
+            $totalHargaPerolehan += $harga;
+            $totalPenyusutanBulanan += $penyusutanPerBulan;
+            $totalAkumulasiPenyusutan += $akumulasi;
+            $totalNilaiBuku += $nilaiBuku;
+        }
+
+        // Paginasi server-side
+        $perPage = $request->integer('per_page', 25);
+        if (!in_array($perPage, [10, 25, 50, 100, 250])) {
+            $perPage = 25;
+        }
+
+        $commodities = (clone $baseQuery)
+            ->with(['commodity_location', 'jenisBarang', 'gedung', 'commodity_acquisition'])
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
 
         $locations = CommodityLocation::orderBy('name', 'ASC')->get();
         $jenisBarangList = JenisBarang::orderBy('name', 'ASC')->get();
@@ -103,7 +116,6 @@ class LaporanPenyusutanController extends Controller
 
     public function export()
     {
-        $this->ensureSchemaExists();
         return Excel::download(new PenyusutanExport, 'laporan_penyusutan_' . date('Ymd_His') . '.xlsx');
     }
 
@@ -112,8 +124,6 @@ class LaporanPenyusutanController extends Controller
      */
     public function updateParameter(Request $request, $id)
     {
-        $this->ensureSchemaExists();
-
         $request->validate([
             'umur_manfaat' => 'required|numeric|min:1',
             'nilai_residu' => 'nullable|numeric|min:0',

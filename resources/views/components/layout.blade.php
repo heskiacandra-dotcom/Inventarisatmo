@@ -26,6 +26,29 @@
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.min.css" rel="stylesheet" />
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.bootstrap4.min.css" />
+
+    <!-- Speculation Rules for Instant MPA Page Navigation -->
+    <script type="speculationrules">
+    {
+      "prefetch": [
+        {
+          "source": "document",
+          "where": {
+            "and": [
+              { "href_matches": "/*" },
+              { "not": { "href_matches": "*/logout*" } },
+              { "not": { "href_matches": "*export*" } },
+              { "not": { "href_matches": "*import*" } },
+              { "not": { "href_matches": "*pdf*" } },
+              { "not": { "href_matches": "*download*" } },
+              { "not": { "selector_matches": ".no-transition, .delete-button, .logout, [download]" } }
+            ]
+          },
+          "eagerness": "moderate"
+        }
+      ]
+    }
+    </script>
 </head>
 
 <body>
@@ -270,8 +293,6 @@
     <!-- JS Libraies -->
     <script src="https://cdn.datatables.net/2.0.6/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.0.6/js/dataTables.bootstrap4.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
-    <!-- Di bagian head layout utama -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Template JS File -->
@@ -282,8 +303,6 @@
     <script src="{{ url('assets/js/page/index-0.js') }}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
-
-    <script src="{{ asset('js/scripts.js') }}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 

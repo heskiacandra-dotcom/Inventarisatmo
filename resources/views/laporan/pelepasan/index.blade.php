@@ -97,7 +97,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($barangDilepas as $barang)
+                            @foreach ($barangDilepas as $barang)
                                 <tr>
                                     <th scope="row">{{ $loop->iteration }}</th>
                                     <td>
@@ -127,14 +127,7 @@
                                         <small>{{ $barang->catatan_pelepasan ?? '—' }}</small>
                                     </td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">
-                                        <i class="fas fa-inbox fa-2x d-block mb-2"></i>
-                                        Belum ada barang yang dilepas.
-                                    </td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </x-datatable>
                 </div>
