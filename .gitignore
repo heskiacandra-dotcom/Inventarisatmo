@@ -13,3 +13,5 @@ yarn-error.log
 *.log
 public/error_log
 
+
+README.md
