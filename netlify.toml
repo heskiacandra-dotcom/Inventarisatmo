@@ -1,0 +1,10 @@
+# Laravel 10 app; front-end assets are compiled with Laravel Mix (webpack) via npm.
+# Note: Netlify does not run PHP, so only the static contents of public/ are served.
+[build]
+  # The "production" script in package.json uses Laravel Mix 5 flags that the
+  # installed Mix 6 / webpack-cli 4 rejects, so call the Mix 6 CLI directly.
+  command = "npx mix --production"
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "20"
